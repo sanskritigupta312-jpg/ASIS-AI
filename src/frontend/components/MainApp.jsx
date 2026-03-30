@@ -37,7 +37,7 @@ export default function MainApp() {
   const [blueprintUrl, setBlueprintUrl] = useState(null);
   const [overlayUrl, setOverlayUrl] = useState(null);
   const [analysis, setAnalysis]   = useState(null);
-  // const [block, setBlock] = useState(null); // blockchain commented out
+  const [block, setBlock] = useState(null);
   const [error, setError]         = useState(null);
 
   useEffect(() => {
@@ -53,7 +53,7 @@ export default function MainApp() {
         if (data.blueprintUrl) setBlueprintUrl(data.blueprintUrl);
         if (data.overlayUrl) setOverlayUrl(data.overlayUrl);
         if (data.analysis)  setAnalysis(data.analysis);
-        // if (data.block) setBlock(data.block); // blockchain commented out
+        if (data.block) setBlock(data.block);
         if (data.status === 'completed' && data.modelUrl) {
           setStatus('completed');
           clearInterval(iv);
@@ -79,7 +79,7 @@ export default function MainApp() {
       if (!res.ok) throw new Error(data.message || `Upload failed: ${res.status}`);
       setTaskId(data.taskId);
       setActiveStep(0);
-      setUploadUrl(null); setModelUrl(null); setBlueprintUrl(null); setOverlayUrl(null); setAnalysis(null); // setBlock(null); // blockchain commented out
+      setUploadUrl(null); setModelUrl(null); setBlueprintUrl(null); setOverlayUrl(null); setAnalysis(null); setBlock(null);
     } catch (e) {
       setError(e.message || 'Failed to start analysis.');
       setStatus('idle');
@@ -87,7 +87,7 @@ export default function MainApp() {
   };
 
   if (status === 'completed') {
-    return <Dashboard uploadUrl={uploadUrl} modelUrl={modelUrl} blueprintUrl={blueprintUrl} overlayUrl={overlayUrl} analysis={analysis} />;  {/* block prop removed */}
+    return <Dashboard uploadUrl={uploadUrl} modelUrl={modelUrl} blueprintUrl={blueprintUrl} overlayUrl={overlayUrl} analysis={analysis} block={block} />;
   }
 
   return (

@@ -1,7 +1,7 @@
 import { useRef, useState } from 'react';
 import { jsPDF } from 'jspdf';
 import ThreeDViewer from './ThreeDViewer';
-// import BlockchainPanel from './BlockchainPanel'; // blockchain commented out
+import BlockchainPanel from './BlockchainPanel';
 
 /* ── tiny helpers ─────────────────────────────────────────────────────────── */
 const Chip = ({ children, color = 'default' }) => {
@@ -274,7 +274,6 @@ export default function Dashboard({ uploadUrl, modelUrl, blueprintUrl, overlayUr
         });
       }
 
-      /* blockchain section commented out
       if (block) {
         y += 4;
         heading('7. Blockchain Record');
@@ -294,7 +293,6 @@ export default function Dashboard({ uploadUrl, modelUrl, blueprintUrl, overlayUr
         const pl = doc.splitTextToSize(block.prevHash, UW - 4);
         doc.text(pl, M + 2, y);
       }
-      */
 
       /* Footer */
       const total = doc.getNumberOfPages();
@@ -501,7 +499,7 @@ export default function Dashboard({ uploadUrl, modelUrl, blueprintUrl, overlayUr
               ) : <p className="text-sm" style={{ color: 'var(--text-3)' }}>No data</p>}
             </Card>
 
-            {/* <BlockchainPanel block={block} /> */}
+            <BlockchainPanel block={block} />
           </div>
 
           {/* Col 2 — walls */}
