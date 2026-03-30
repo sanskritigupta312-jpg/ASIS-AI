@@ -320,37 +320,34 @@ export default function Dashboard({ uploadUrl, modelUrl, blueprintUrl, overlayUr
 
       {/* Top bar */}
       <div
-        className="sticky top-0 z-30 px-4 sm:px-6 py-3 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2"
+        className="sticky top-0 z-30 px-3 sm:px-6 py-2.5 flex items-center justify-between gap-2"
         style={{ background: 'rgba(238,244,251,.95)', backdropFilter: 'blur(16px)', borderBottom: '1px solid var(--border)' }}
       >
-        <div className="flex items-center gap-3 flex-wrap">
-          <span className="w-2 h-2 rounded-full bg-green-500 animate-pulse" />
-          <span className="font-semibold text-sm" style={{ color: 'var(--text-1)' }}>Analysis Complete</span>
+        <div className="flex items-center gap-2 min-w-0">
+          <span className="w-2 h-2 rounded-full bg-green-500 animate-pulse flex-shrink-0" />
+          <span className="font-semibold text-sm truncate" style={{ color: 'var(--text-1)' }}>Analysis Complete</span>
           {s && (
-            <span className="text-xs hidden sm:inline" style={{ color: 'var(--text-3)' }}>
-              {s.total_rooms} rooms · {s.floor_area_m2} m² · {(walls?.outer_count ?? 0) + (walls?.inner_count ?? 0)} walls
+            <span className="text-xs hidden md:inline flex-shrink-0" style={{ color: 'var(--text-3)' }}>
+              {s.total_rooms} rooms &middot; {s.floor_area_m2} m&sup2;
             </span>
           )}
         </div>
         <button
           onClick={downloadPDF}
           disabled={pdfLoading}
-          className="btn-primary"
-          style={{ padding: '0.5rem 1.25rem', fontSize: '0.8rem', opacity: pdfLoading ? 0.6 : 1 }}
+          className="btn-primary flex-shrink-0"
+          style={{ padding: '0.4rem 0.8rem', fontSize: '0.8rem', opacity: pdfLoading ? 0.6 : 1 }}
         >
           {pdfLoading ? (
-            <>
-              <svg className="animate-spin" width="14" height="14" viewBox="0 0 14 14" fill="none">
-                <circle cx="7" cy="7" r="5.5" stroke="currentColor" strokeWidth="1.5" strokeDasharray="20" strokeDashoffset="10"/>
-              </svg>
-              Generating…
-            </>
+            <svg className="animate-spin" width="14" height="14" viewBox="0 0 14 14" fill="none">
+              <circle cx="7" cy="7" r="5.5" stroke="currentColor" strokeWidth="1.5" strokeDasharray="20" strokeDashoffset="10"/>
+            </svg>
           ) : (
             <>
               <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
                 <path d="M7 2v7M4 7l3 3 3-3M2 11h10" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round"/>
               </svg>
-              Download PDF
+              <span className="hidden sm:inline">Download PDF</span>
             </>
           )}
         </button>
@@ -359,33 +356,44 @@ export default function Dashboard({ uploadUrl, modelUrl, blueprintUrl, overlayUr
       <div className="max-w-6xl mx-auto px-4 sm:px-6 py-6 sm:py-8 space-y-6">
 
         {/* View Tabs */}
-        <div className="flex flex-col gap-3 anim-fade-up">
-          <div className="tabs-scroll flex gap-2 pb-1">
+        <div className="flex flex-col gap-2 anim-fade-up">
+          <div className="tabs-scroll flex gap-2 pb-1" style={{ WebkitOverflowScrolling: 'touch' }}>
             {[
-              { id: 'input', label: '2D Input', icon: '📎' },
-              { id: 'blueprint', label: 'Blueprint', icon: '📐' },
-              { id: 'overlay', label: 'Overlay', icon: '🎯' },
-              { id: '3d', label: '3D Model', icon: '🧊' }
+              { id: 'input',     label: '2D Input',   icon: '📎' },
+              { id: 'blueprint', label: 'Blueprint',   icon: '📐' },
+              { id: 'overlay',   label: 'Overlay',     icon: '🎯' },
+              { id: '3d',        label: '3D Model',    icon: '🧊' }
             ].map(({ id, label, icon }) => {
               const isActive = activeView === id;
               return (
                 <button
                   key={id}
                   onClick={() => setActiveView(id)}
-                  className="flex items-center gap-2 px-3 sm:px-4 py-2 rounded-xl text-sm font-semibold transition-all flex-shrink-0"
                   style={{
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    gap: '0.4rem',
+                    padding: '0.45rem 0.85rem',
+                    borderRadius: '0.75rem',
+                    fontSize: '0.82rem',
+                    fontWeight: 600,
+                    whiteSpace: 'nowrap',
+                    flexShrink: 0,
+                    transition: 'all .15s',
                     background: isActive ? 'var(--accent)' : 'white',
                     color: isActive ? 'white' : 'var(--text-2)',
                     border: `1px solid ${isActive ? 'var(--accent)' : 'var(--border)'}`,
-                    boxShadow: isActive ? '0 2px 8px rgba(37,99,235,0.2)' : 'none'
+                    boxShadow: isActive ? '0 2px 8px rgba(37,99,235,0.2)' : 'none',
+                    cursor: 'pointer',
                   }}
                 >
-                  <span>{icon}</span> {label}
+                  <span style={{ fontSize: '0.9rem' }}>{icon}</span>
+                  <span>{label}</span>
                 </button>
               );
             })}
           </div>
-          <p className="text-xs" style={{ color: 'var(--text-3)', marginTop: '-0.25rem' }}>
+          <p className="text-xs hidden sm:block" style={{ color: 'var(--text-3)' }}>
             2D Input is your original upload. Blueprint shows the detected walls. Overlay shows those walls on top of the plan.
           </p>
         </div>
