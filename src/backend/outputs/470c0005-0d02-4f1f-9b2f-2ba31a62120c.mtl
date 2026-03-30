@@ -1,0 +1,17 @@
+newmtl outer_wall
+Kd 0.18 0.42 0.86
+Ka 0.05 0.10 0.20
+Ks 0.3 0.3 0.3
+Ns 40
+
+newmtl inner_wall
+Kd 0.55 0.75 0.98
+Ka 0.10 0.15 0.25
+Ks 0.2 0.2 0.2
+Ns 20
+
+newmtl floor_slab
+Kd 0.92 0.95 0.99
+Ka 0.15 0.18 0.22
+Ks 0.1 0.1 0.1
+Ns 10
