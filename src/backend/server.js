@@ -6,7 +6,7 @@ import fs from 'fs';
 import path from 'path';
 import { spawn } from 'child_process';
 import { fileURLToPath } from 'url';
-// import { createHash } from 'crypto'; // blockchain commented out
+import { createHash } from 'crypto';
 
 // Setup for ES Modules to get __dirname
 const __filename = fileURLToPath(import.meta.url);
@@ -247,12 +247,12 @@ const createDummy3DModel = (task, outputPath) => {
 // In-memory store for tasks
 const tasks = new Map();
 
-// ── Blockchain (commented out) ───────────────────────────────────────────────
-/*
 const blockchain = [];
 
-const sha256 = (data) =>
-  createHash('sha256').update(JSON.stringify(data)).digest('hex');
+const sha256 = (data) => {
+  const { hash, ...pureData } = data; // Don't include hash in its own hash calculation
+  return createHash('sha256').update(JSON.stringify(pureData)).digest('hex');
+};
 
 const mineBlock = (taskId, analysis) => {
   const prevHash = blockchain.length > 0
@@ -270,12 +270,13 @@ const mineBlock = (taskId, analysis) => {
     floorArea: analysis?.border?.total_area_m2 ?? 0,
   };
 
-  const hash = sha256({ ...blockData, prevHash });
+  const hash = sha256(blockData);
   const block = { ...blockData, hash };
   blockchain.push(block);
   return block;
 };
 
+// Create Genesis Block
 blockchain.push({
   index: 0,
   taskId: 'genesis',
@@ -284,7 +285,6 @@ blockchain.push({
   hash: sha256({ genesis: true }),
   summary: {}, walls: { outer: 0, inner: 0 }, rooms: 0, floorArea: 0,
 });
-*/
 
 // --- API ROUTES ---
 
@@ -350,7 +350,7 @@ app.post('/api/analyze', upload.single('file'), (req, res) => {
       task.modelFilename = modelFilename;
       task.currentStep = steps.length - 1;
       task.analysis = analysis;
-      // task.block = mineBlock(taskId, analysis); // blockchain commented out
+      task.block = mineBlock(taskId, analysis);
       task.status = 'completed';
     };
 
@@ -405,7 +405,7 @@ app.get('/api/task', (req, res) => {
     blueprintUrl,
     overlayUrl,
     analysis: task.analysis,
-    // block: task.block ?? null, // blockchain commented out
+    block: task.block ?? null,
   });
 });
 
@@ -434,17 +434,11 @@ app.get('/api/model', (req, res) => {
   });
 });
 
-// 4. Blockchain endpoint (commented out)
-/*
 app.get('/api/blockchain', (req, res) => {
   let valid = true;
   for (let i = 1; i < blockchain.length; i++) {
     const b = blockchain[i];
-    const expectedHash = sha256({
-      index: b.index, taskId: b.taskId, timestamp: b.timestamp,
-      prevHash: b.prevHash, summary: b.summary, walls: b.walls,
-      rooms: b.rooms, floorArea: b.floorArea,
-    });
+    const expectedHash = sha256(b);
     if (b.hash !== expectedHash || b.prevHash !== blockchain[i - 1].hash) {
       valid = false;
       break;
@@ -452,7 +446,6 @@ app.get('/api/blockchain', (req, res) => {
   }
   res.status(200).json({ chain: blockchain, length: blockchain.length, valid });
 });
-*/
 
 // Start the server
 app.listen(PORT, () => {
