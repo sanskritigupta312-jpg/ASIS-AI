@@ -92,7 +92,7 @@ export default function StudioPage() {
     <div style={{ background: 'var(--bg)', minHeight: '100vh' }}>
       <Header />
 
-      <main className="max-w-6xl mx-auto px-6 pt-32 pb-20 space-y-16">
+      <main className="max-w-6xl mx-auto px-4 sm:px-6 pt-28 sm:pt-32 pb-16 sm:pb-20 space-y-12 sm:space-y-16">
 
         {/* ── Page header ── */}
         <div className="anim-fade-up">
@@ -108,7 +108,7 @@ export default function StudioPage() {
         {/* ── 3D Gallery ── */}
         <div className="grid lg:grid-cols-[280px_1fr] gap-6 anim-fade-up anim-delay-1">
 
-          {/* Sidebar — example selector */}
+          {/* Sidebar — example selector, stacks above viewer on mobile */}
           <div className="space-y-3">
             <p className="label mb-2">Select Example</p>
             {EXAMPLES.map((e, i) => (
@@ -129,7 +129,7 @@ export default function StudioPage() {
 
           {/* 3D Viewer */}
           <div className="space-y-4">
-            <div className="dark-panel overflow-hidden" style={{ height: 480 }}>
+            <div className="dark-panel overflow-hidden viewer-auto">
               <ThreeDViewer isLoading={false} previewUrl={ex.modelUrl} />
             </div>
 
@@ -172,8 +172,9 @@ export default function StudioPage() {
 
         {/* ── CTA ── */}
         <div
-          className="rounded-3xl p-12 text-center relative overflow-hidden anim-fade-up"
+          className="rounded-3xl text-center relative overflow-hidden anim-fade-up"
           style={{
+            padding: 'clamp(2rem, 5vw, 3rem) clamp(1.25rem, 5vw, 3rem)',
             background: 'linear-gradient(135deg,#0c1a3a 0%,#0f2460 50%,#1a3a7a 100%)',
             boxShadow: '0 20px 60px rgba(12,26,58,.35)',
           }}

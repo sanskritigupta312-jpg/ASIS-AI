@@ -94,7 +94,7 @@ export default function MainApp() {
     <div style={{ background: 'var(--bg)', minHeight: '100vh' }}>
       <Header />
 
-      <main className="max-w-5xl mx-auto px-6 pt-32 pb-20 space-y-6">
+      <main className="max-w-5xl mx-auto px-4 sm:px-6 pt-28 sm:pt-32 pb-16 sm:pb-20 space-y-6">
 
         {/* Page title */}
         <div className="anim-fade-up">
@@ -116,14 +116,14 @@ export default function MainApp() {
         </div>
 
         {/* Main content */}
-        <div className="grid lg:grid-cols-[1fr_340px] gap-6 anim-fade-up anim-delay-2">
+        <div className="grid gap-6 lg:grid-cols-[1fr_340px] anim-fade-up anim-delay-2">
 
           {/* Left — upload or viewer */}
           <div className="space-y-4">
             {status === 'idle' ? (
               <UploadSection onUpload={startAnalysis} />
             ) : (
-              <div className="dark-panel overflow-hidden" style={{ height: 420 }}>
+              <div className="dark-panel overflow-hidden viewer-auto">
                 <ThreeDViewer isLoading={true} previewUrl={null} />
               </div>
             )}

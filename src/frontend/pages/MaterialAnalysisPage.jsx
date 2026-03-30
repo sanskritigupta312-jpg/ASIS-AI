@@ -27,7 +27,7 @@ export default function MaterialAnalysisPage() {
   return (
     <div style={{ background: 'var(--bg)', minHeight: '100vh' }}>
       <Header />
-      <main className="max-w-5xl mx-auto px-6 pt-32 pb-20 space-y-14">
+      <main className="max-w-5xl mx-auto px-4 sm:px-6 pt-28 sm:pt-32 pb-16 sm:pb-20 space-y-12 sm:space-y-14">
 
         <div className="anim-fade-up">
           <span className="badge badge-blue mb-4">Material Analysis</span>
@@ -38,7 +38,7 @@ export default function MaterialAnalysisPage() {
         </div>
 
         {/* Material cards */}
-        <div className="grid sm:grid-cols-3 gap-5 anim-fade-up anim-delay-1">
+        <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-5 anim-fade-up anim-delay-1">
           {MATERIALS.map(m => (
             <div key={m.name} className="card p-6 space-y-4" style={{ background: m.bg, borderColor: m.border }}>
               <div>

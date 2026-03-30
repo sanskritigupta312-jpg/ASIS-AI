@@ -85,7 +85,7 @@ export default function BlockchainRecordsPage() {
   return (
     <div style={{ background: 'var(--bg)', minHeight: '100vh' }}>
       <Header />
-      <main className="max-w-5xl mx-auto px-6 pt-32 pb-20 space-y-14">
+      <main className="max-w-5xl mx-auto px-4 sm:px-6 pt-28 sm:pt-32 pb-16 sm:pb-20 space-y-12 sm:space-y-14">
 
         <div className="anim-fade-up">
           <span className="badge badge-blue mb-4">Blockchain Records</span>

@@ -24,7 +24,7 @@ export default function ModelViewerPage() {
   return (
     <div style={{ background: 'var(--bg)', minHeight: '100vh' }}>
       <Header />
-      <main className="max-w-6xl mx-auto px-6 pt-32 pb-20 space-y-8">
+      <main className="max-w-6xl mx-auto px-4 sm:px-6 pt-28 sm:pt-32 pb-16 sm:pb-20 space-y-8">
 
         <div className="anim-fade-up">
           <span className="badge badge-blue mb-4">3D Model Viewer</span>
@@ -51,7 +51,7 @@ export default function ModelViewerPage() {
         </div>
 
         {/* Full viewer */}
-        <div className="dark-panel overflow-hidden anim-fade-up anim-delay-2" style={{ height: 540 }}>
+        <div className="dark-panel overflow-hidden viewer-auto anim-fade-up anim-delay-2">
           <ThreeDViewer isLoading={false} previewUrl={MODELS[selected].url} />
         </div>
 

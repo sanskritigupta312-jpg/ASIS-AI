@@ -54,10 +54,11 @@ export default function LandingPage() {
       <Header />
 
       {/* ── Hero ─────────────────────────────────────────────────────────── */}
-      <section className="hero-bg pt-36 pb-32 px-6">
+      <section className="hero-bg px-6" style={{ paddingTop: 'clamp(5.5rem, 10vw, 9rem)', paddingBottom: 'clamp(3rem, 8vw, 8rem)' }}>
         <div className="max-w-5xl mx-auto relative">
 
           {/* Floating decorative blueprint cards */}
+          <div className="hero-float-card">
           <BlueprintCard
             style={{ top: '10px', right: '0px', opacity: 0.85, animation: 'float 6s ease-in-out infinite' }}
             lines={[
@@ -66,6 +67,8 @@ export default function LandingPage() {
               { w: 20, c: '#bfdbfe', t: 'floor_slab · RCC' },
             ]}
           />
+          </div>
+          <div className="hero-float-card">
           <BlueprintCard
             style={{ bottom: '80px', right: '60px', opacity: 0.7, animation: 'float 8s ease-in-out infinite reverse' }}
             lines={[
@@ -74,6 +77,7 @@ export default function LandingPage() {
               { w: 22, c: '#a78bfa', t: 'block #42 · valid' },
             ]}
           />
+          </div>
 
           {/* Badge */}
           <div className="anim-fade-up">
@@ -187,8 +191,8 @@ export default function LandingPage() {
       <section className="py-24 px-6" style={{ background: 'white' }}>
         <div className="max-w-5xl mx-auto">
           <div
-            className="rounded-3xl p-14 text-center relative overflow-hidden"
-            style={{
+            className="rounded-3xl text-center relative overflow-hidden cta-section"
+            style={{ padding: 'clamp(2rem, 6vw, 3.5rem) clamp(1.25rem, 5vw, 3.5rem)',
               background: 'linear-gradient(135deg, #0c1a3a 0%, #0f2460 50%, #1a3a7a 100%)',
               boxShadow: '0 20px 60px rgba(12,26,58,.4)',
             }}

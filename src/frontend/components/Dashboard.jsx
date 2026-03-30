@@ -320,14 +320,14 @@ export default function Dashboard({ uploadUrl, modelUrl, blueprintUrl, overlayUr
 
       {/* Top bar */}
       <div
-        className="sticky top-0 z-30 px-6 py-3 flex items-center justify-between"
+        className="sticky top-0 z-30 px-4 sm:px-6 py-3 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2"
         style={{ background: 'rgba(238,244,251,.95)', backdropFilter: 'blur(16px)', borderBottom: '1px solid var(--border)' }}
       >
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-3 flex-wrap">
           <span className="w-2 h-2 rounded-full bg-green-500 animate-pulse" />
           <span className="font-semibold text-sm" style={{ color: 'var(--text-1)' }}>Analysis Complete</span>
           {s && (
-            <span className="text-xs" style={{ color: 'var(--text-3)' }}>
+            <span className="text-xs hidden sm:inline" style={{ color: 'var(--text-3)' }}>
               {s.total_rooms} rooms · {s.floor_area_m2} m² · {(walls?.outer_count ?? 0) + (walls?.inner_count ?? 0)} walls
             </span>
           )}
@@ -356,11 +356,11 @@ export default function Dashboard({ uploadUrl, modelUrl, blueprintUrl, overlayUr
         </button>
       </div>
 
-      <div className="max-w-6xl mx-auto px-6 py-8 space-y-6">
+      <div className="max-w-6xl mx-auto px-4 sm:px-6 py-6 sm:py-8 space-y-6">
 
         {/* View Tabs */}
         <div className="flex flex-col gap-3 anim-fade-up">
-          <div className="flex gap-2">
+          <div className="tabs-scroll flex gap-2 pb-1">
             {[
               { id: 'input', label: '2D Input', icon: '📎' },
               { id: 'blueprint', label: 'Blueprint', icon: '📐' },
@@ -372,7 +372,7 @@ export default function Dashboard({ uploadUrl, modelUrl, blueprintUrl, overlayUr
                 <button
                   key={id}
                   onClick={() => setActiveView(id)}
-                  className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold transition-all"
+                  className="flex items-center gap-2 px-3 sm:px-4 py-2 rounded-xl text-sm font-semibold transition-all flex-shrink-0"
                   style={{
                     background: isActive ? 'var(--accent)' : 'white',
                     color: isActive ? 'white' : 'var(--text-2)',
@@ -391,7 +391,7 @@ export default function Dashboard({ uploadUrl, modelUrl, blueprintUrl, overlayUr
         </div>
 
         {/* 3D / 2D Viewer */}
-        <div className="dark-panel overflow-hidden anim-fade-in">
+        <div className="dark-panel overflow-hidden viewer-auto anim-fade-in">
           <ThreeDViewer isLoading={false} previewUrl={getViewUrl()} canvasRef={glCanvasRef} rooms={rooms} />
         </div>
 
@@ -459,7 +459,7 @@ export default function Dashboard({ uploadUrl, modelUrl, blueprintUrl, overlayUr
         )}
 
         {/* 3-col analysis */}
-        <div className="grid lg:grid-cols-3 gap-5 anim-fade-up anim-delay-1">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5 anim-fade-up anim-delay-1">
 
           {/* Col 1 */}
           <div className="space-y-4">

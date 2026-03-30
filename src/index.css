@@ -211,3 +211,71 @@ body {
   z-index: 0;
 }
 .hero-bg > * { position: relative; z-index: 1; }
+
+/* ── Responsive viewer height ────────────────────────────────────────────── */
+:root {
+  --viewer-h: 320px;
+}
+@media (min-width: 640px)  { :root { --viewer-h: 400px; } }
+@media (min-width: 1024px) { :root { --viewer-h: 480px; } }
+
+.viewer-auto { height: var(--viewer-h); }
+
+/* ── Mobile nav drawer ───────────────────────────────────────────────────── */
+.mobile-drawer {
+  position: fixed;
+  inset: 0;
+  z-index: 40;
+  background: rgba(12, 26, 58, 0.45);
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
+}
+.mobile-drawer-panel {
+  position: absolute;
+  top: 0; right: 0; bottom: 0;
+  width: min(80vw, 320px);
+  background: #fff;
+  box-shadow: -8px 0 40px rgba(29,78,216,.15);
+  overflow-y: auto;
+  animation: slide-in-right .22s cubic-bezier(.22,1,.36,1) both;
+}
+@keyframes slide-in-right {
+  from { transform: translateX(100%); }
+  to   { transform: translateX(0); }
+}
+
+/* ── Touch-friendly tap targets ──────────────────────────────────────────── */
+@media (max-width: 767px) {
+  .btn-primary, .btn-ghost {
+    padding: .8rem 1.4rem;
+    font-size: .9rem;
+  }
+  /* Make upload zone touch-friendly */
+  .upload-zone { min-height: 200px; }
+  /* Scroll-snap tabs */
+  .tabs-scroll {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+  }
+  .tabs-scroll::-webkit-scrollbar { display: none; }
+  /* Hide decorative floating cards on tiny screens */
+  .hero-float-card { display: none; }
+  /* Reduce hero section padding */
+  .hero-bg { padding-top: 6rem !important; padding-bottom: 4rem !important; }
+  /* CTA section compact padding */
+  .cta-section { padding: 2.5rem 1.25rem !important; }
+  /* Remove huge section margins */
+  .section-divider { margin: 2rem 0; }
+}
+
+@media (min-width: 768px) {
+  .hero-float-card { display: block; }
+}
+
+/* ── Responsive prose ────────────────────────────────────────────────────── */
+@media (max-width: 479px) {
+  body { font-size: 14px; }
+  .display { font-size: clamp(2rem, 9vw, 2.8rem); }
+  .heading { font-size: clamp(1.3rem, 5vw, 1.8rem); }
+}
