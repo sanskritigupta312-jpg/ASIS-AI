@@ -105,7 +105,11 @@ const fetchMaterialPrices = async () => {
 const runPythonModelGenerator = (inputPath, outputPath) => {
   return new Promise((resolve, reject) => {
     const scriptPath = path.join(__dirname, 'process_floor.py');
-    const pythonCmd = process.env.PYTHON_PATH || 'python';
+    let pythonCmd = process.env.PYTHON_PATH || 'python';
+    const venvPython = path.join(__dirname, '..', '..', '.venv', 'Scripts', 'python.exe');
+    if (fs.existsSync(venvPython)) {
+      pythonCmd = venvPython;
+    }
     const pythonProcess = spawn(pythonCmd, [scriptPath, inputPath, outputPath]);
     let stdout = '';
     let stderr = '';
