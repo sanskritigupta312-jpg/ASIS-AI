@@ -17,8 +17,8 @@ from urllib.error import URLError
 # ── Constants ─────────────────────────────────────────────────────────────────
 SCALE        = 0.05   # 1 px = 0.05 m
 WALL_HEIGHT  = 3.0    # standard storey height (m)
-OUTER_THICK  = 12.0   # px — load-bearing wall thickness
-INNER_THICK  = 8.0    # px — partition wall thickness
+OUTER_THICK  = 9.0   # px — load-bearing wall thickness
+INNER_THICK  = 6.0    # px — partition wall thickness
 MARGIN       = 25     # px — boundary margin for outer-wall detection
 
 # ── Material database with cost/strength/justification ───────────────────────
