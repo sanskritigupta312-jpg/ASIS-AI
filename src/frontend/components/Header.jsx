@@ -174,7 +174,7 @@ export default function Header() {
 
               <div style={{ width: 1, height: 20, background: 'var(--border)', margin: '0 4px' }} />
 
-              <Link to="/studio" className="btn-primary"
+              <Link to="/app" className="btn-primary"
                 style={{ padding: '0.42rem 1.1rem', fontSize: '0.78rem', marginLeft: '4px' }}>
                 Launch Analysis
                 <svg width="11" height="11" viewBox="0 0 12 12" fill="none">
