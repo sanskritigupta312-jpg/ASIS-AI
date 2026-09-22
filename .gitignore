@@ -22,3 +22,15 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+.venv/
+
+# Backend uploads & outputs (keep gitkeep)
+src/backend/outputs/*
+!src/backend/outputs/.gitkeep
+src/backend/uploads/*
+!src/backend/uploads/.gitkeep

@@ -140,35 +140,24 @@ def filter_dimension_lines(segs, w_img, h_img):
     """
     Remove dimension / annotation lines from the detected segment list.
 
-    Three complementary heuristics — a segment is discarded if it fails ANY:
-
-    A) LENGTH TEST
-       Segments shorter than MIN_WALL_LEN px are extension tick marks,
-       short leader lines or text-outline fragments — never real walls.
-
-    B) IMAGE-BORDER ZONE TEST
-       Dimension graphics (the numeric callout + measurement line) are almost
-       always drawn OUTSIDE the building boundary, near the image edges.
-       Any segment whose midpoint lies within DIM_MARGIN px of any image
-       edge is treated as a border annotation.
-
-    C) ISOLATION TEST
-       Real walls are CONNECTED — they meet other walls at corners / T-junctions.
-       Dimension lines are ISOLATED — they connect to nothing else.
-       If BOTH endpoints of a segment have degree ≤ 1 in the junction graph
-       AND the segment is shorter than ISOLATE_MAX px → annotation → discard.
-       Long isolated segments (> ISOLATE_MAX) are kept as potential outer walls.
-
-    Returns
-    -------
-    kept      : list of segments that passed all tests
-    n_removed : count of discarded segments (stored in robustness dict)
+    Distinguishes real physical walls from dimension graphics:
+    A) LENGTH TEST: Adaptive threshold based on image resolution.
+       Segments shorter than min_wall_len px are extension tick marks,
+       short leader lines or text-outline fragments.
+    B) IMAGE-BORDER ZONE TEST: Dimension measurement callouts and lines
+       are typically placed outside the core building boundary.
+    C) ISOLATION TEST: Physical walls meet at corners or T-junctions.
+       Segments that are isolated and short are annotation lines.
     """
     if not segs:
         return segs, 0
 
-    # Build endpoint degree map (snap to 12-px grid for fuzzy endpoint matching)
-    SNAP = 12
+    min_dim = min(w_img, h_img)
+    min_wall_len = max(18, int(min_dim * 0.022))
+    dim_margin = max(15, int(min_dim * 0.03))
+    isolate_max = max(55, int(min_dim * 0.10))
+
+    SNAP = 14
     def sp(x, y):
         return (round(x / SNAP) * SNAP, round(y / SNAP) * SNAP)
 
@@ -184,48 +173,46 @@ def filter_dimension_lines(segs, w_img, h_img):
         length = dist(x1, y1, x2, y2)
 
         # ── A: Too short ──────────────────────────────────────────────────────
-        if length < MIN_WALL_LEN:
+        if length < min_wall_len:
             n_removed += 1
             continue
 
         # ── B: Midpoint in image-border annotation zone ───────────────────────
         mid_x = (x1 + x2) / 2.0
         mid_y = (y1 + y2) / 2.0
-        if (mid_x < DIM_MARGIN or mid_x > w_img - DIM_MARGIN or
-                mid_y < DIM_MARGIN or mid_y > h_img - DIM_MARGIN):
+        if (mid_x < dim_margin or mid_x > w_img - dim_margin or
+                mid_y < dim_margin or mid_y > h_img - dim_margin):
             n_removed += 1
             continue
 
         # ── C: Isolated segment — not connected to the wall network ───────────
         d1 = degree.get(sp(x1, y1), 0)
         d2 = degree.get(sp(x2, y2), 0)
-        if d1 <= 1 and d2 <= 1 and length < ISOLATE_MAX:
+        if d1 <= 1 and d2 <= 1 and length < isolate_max:
             n_removed += 1
             continue
 
         kept.append(seg)
+
+    # Safety: if filtering discarded too many walls, retain segments
+    if len(kept) < 4 and len(segs) >= 4:
+        return segs, 0
 
     return kept, n_removed
 
 
 def build_connectivity_filter(segs, min_component_size=3):
     """
-    Additional pass: keep only wall segments that belong to a connected
-    component of size >= min_component_size.
-
-    Dimension lines typically form tiny isolated components (1-2 segments).
-    The real wall network is one large connected component.
-
-    Returns the filtered segment list.
+    Keep wall segments that belong to a connected component.
+    Rejects tiny detached 1-2 segment annotations while preserving real walls.
     """
     if len(segs) < min_component_size:
-        return segs   # too few segs to apply — return as-is
+        return segs
 
     SNAP = 16
     def sp(x, y):
         return (round(x / SNAP) * SNAP, round(y / SNAP) * SNAP)
 
-    # Union-Find
     parent = {}
     def find(x):
         parent.setdefault(x, x)
@@ -244,12 +231,9 @@ def build_connectivity_filter(segs, min_component_size=3):
         pts.extend([p1, p2])
         union(p1, p2)
 
-    # Count component sizes
     from collections import Counter
     comp_size = Counter(find(p) for p in pts)
 
-    # A segment belongs to the main network if either of its endpoints is
-    # in a component large enough to represent real walls.
     result = []
     for seg in segs:
         x1, y1, x2, y2 = seg
@@ -258,7 +242,6 @@ def build_connectivity_filter(segs, min_component_size=3):
                 comp_size[find(p2)] >= min_component_size):
             result.append(seg)
 
-    # Safety: never return fewer than 4 segments (wall-closing fallback handles the rest)
     return result if len(result) >= 4 else segs
 
 
@@ -600,41 +583,40 @@ def analyse(input_path: str, output_obj: str) -> dict:
     gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
 
     # ── Stage 1a: Adaptive threshold ──────────────────────────────────────────
-    # Otsu's method automatically picks the best global threshold, handling
-    # scanned blueprints (high contrast) and photo-captured plans equally well.
-    _, binary = cv2.threshold(gray, 0, 255, cv2.THRESH_BINARY_INV + cv2.THRESH_OTSU)
+    # Handles both black-on-white and inverted white-on-dark floor plans
+    inv = cv2.THRESH_BINARY_INV if np.mean(gray) > 127 else cv2.THRESH_BINARY
+    _, binary = cv2.threshold(gray, 0, 255, inv + cv2.THRESH_OTSU)
 
-    # ── Stage 1b: Eliminate thin annotation lines ──────────────────────────────
-    # KEY FIX: Architectural walls are THICK (≥ 5 px when drawn as double lines
-    # or filled rectangles).  Dimension lines, extension ticks, hatching and text
-    # strokes are THIN (1-3 px).
-    #
-    # A morphological OPEN with a 3×3 kernel = erosion followed by dilation.
-    # Anything thinner than the kernel radius disappears after erosion and is NOT
-    # restored by dilation → dimension/annotation geometry is eliminated here.
-    # Thick wall geometry survives because it is wider than the kernel.
+    # ── Stage 1b: Eliminate text labels & dimension numbers ───────────────────
+    # Dimension labels (e.g. 13' x 12', 10'0") and text annotations are small
+    # connected components. Mask them out so they never become 3D walls.
+    num_labels, labels, stats, _ = cv2.connectedComponentsWithStats(binary, connectivity=8)
+    wall_mask = np.zeros_like(binary)
+    for i in range(1, num_labels):
+        area = stats[i, cv2.CC_STAT_AREA]
+        cw = stats[i, cv2.CC_STAT_WIDTH]
+        ch = stats[i, cv2.CC_STAT_HEIGHT]
+        # Text characters and small dimension arrows have small area or tiny bbox
+        if area < 15 or (area < 700 and cw < 32 and ch < 32) or (cw < 7 and ch < 7):
+            continue
+        wall_mask[labels == i] = 255
+
+    # ── Stage 1c: Eliminate thin annotation lines ──────────────────────────────
+    # Architectural walls are thick. Morphological opening strips thin 1-2px lines.
     thin_k = np.ones((3, 3), np.uint8)
-    thick_only = cv2.morphologyEx(binary, cv2.MORPH_OPEN, thin_k, iterations=2)
+    thick_only = cv2.morphologyEx(wall_mask, cv2.MORPH_OPEN, thin_k, iterations=1)
 
-    # ── Stage 1c: Fuse double-line wall pairs ─────────────────────────────────
-    # Many floor plans draw walls as two close parallel lines (the wall faces).
-    # A CLOSE operation bridges the gap between them, producing a single solid
-    # band per wall.  This gives HoughLinesP one clean centre-line per wall
-    # instead of two edges that would each become phantom walls.
-    fuse_k = np.ones((7, 7), np.uint8)
+    # Fuse double-line wall pairs into solid wall bands
+    fuse_k = np.ones((5, 5), np.uint8)
     thick_fused = cv2.morphologyEx(thick_only, cv2.MORPH_CLOSE, fuse_k)
 
     # ── Stage 1d: Canny edge detection on wall-only mask ──────────────────────
     blurred = cv2.GaussianBlur(thick_fused, (3, 3), 0)
     edges   = cv2.Canny(blurred, 30, 100, apertureSize=3)
 
-    # ── Fallback: if thick filtering removed too much, soften the pipeline ─────
-    # (handles very thin-line plans, e.g. CAD exports at low resolution)
-    if cv2.countNonZero(edges) < 400:
-        soft_k     = np.ones((2, 2), np.uint8)
-        soft_binary = cv2.morphologyEx(binary, cv2.MORPH_OPEN, soft_k, iterations=1)
-        soft_fused  = cv2.morphologyEx(soft_binary, cv2.MORPH_CLOSE, np.ones((5, 5), np.uint8))
-        edges       = cv2.Canny(cv2.GaussianBlur(soft_fused, (3, 3), 0), 30, 120, apertureSize=3)
+    # Fallback if filtering removed too much (e.g. ultra-thin CAD blueprints)
+    if cv2.countNonZero(edges) < 300:
+        edges = cv2.Canny(cv2.GaussianBlur(binary, (3, 3), 0), 30, 120, apertureSize=3)
 
     # Border bounding box
     coords = cv2.findNonZero(edges)
@@ -651,12 +633,12 @@ def analyse(input_path: str, output_obj: str) -> dict:
     }
 
     # ── Stage 2: Wall-line extraction ─────────────────────────────────────────
-    # Parameters are deliberately stricter than before:
-    #   threshold=70   — requires more Hough votes → only clear, long lines pass
-    #   minLineLength=70 — rejects annotation ticks (< 70 px) that survived Stage 1
-    #   maxLineGap=18  — tighter gap prevents bridging across door/window openings
+    min_dim = min(w_img, h_img)
+    hough_thresh = max(35, int(min_dim * 0.04))
+    hough_min_len = max(24, int(min_dim * 0.03))
+
     raw = cv2.HoughLinesP(edges, 1, np.pi / 180,
-                          threshold=70, minLineLength=70, maxLineGap=18)
+                          threshold=hough_thresh, minLineLength=hough_min_len, maxLineGap=16)
 
     if raw is None or len(raw) < 3:
         # Fallback: manually defined rectangular boundary
@@ -669,29 +651,34 @@ def analyse(input_path: str, output_obj: str) -> dict:
             [[bx+bw//2,by,      bx+bw//2, by+bh]],
         ]
 
-    segs = [tuple(l[0]) for l in raw]   # list of (x1,y1,x2,y2)
+    # Robust array unpacking: handles (N, 4), (N, 1, 4), and list of lists safely
+    segs = []
+    for l in raw:
+        arr = np.array(l).reshape(-1)
+        if len(arr) >= 4:
+            segs.append((int(arr[0]), int(arr[1]), int(arr[2]), int(arr[3])))
+
     segs, robustness = clean_wall_lines(segs)
 
     # ── Stage 2.5: Dimension / annotation line filter ─────────────────────────
-    # Three heuristics remove lines that are almost certainly dimension graphics
-    # rather than physical walls (see filter_dimension_lines docstring).
     pre_filter_count = len(segs)
     segs, n_dim = filter_dimension_lines(segs, w_img, h_img)
     robustness['dimension_lines_removed'] = n_dim
     robustness['walls_after_annotation_filter'] = len(segs)
 
-    # Second pass: connectivity filter — keep only segments that belong to a
-    # connected wall network of ≥ 4 segments.  Isolated dimension line pairs
-    # (which survive the length/zone tests above) are discarded here.
-    segs = build_connectivity_filter(segs, min_component_size=4)
+    # Second pass: connectivity filter
+    segs = build_connectivity_filter(segs, min_component_size=3)
     robustness['walls_after_connectivity_filter'] = len(segs)
 
-    # Safety: if filtering was too aggressive (< 4 walls remain), fall back to
-    # the pre-filter set so the fallback boundary-completion logic can still run.
+    # Safety: if filtering was too aggressive (< 4 walls remain), restore pre-filter set
     if len(segs) < 4 and pre_filter_count >= 4:
-        segs_pre_filter = [tuple(l[0]) for l in raw]
-        segs_pre_filter, _ = clean_wall_lines(segs_pre_filter)
-        segs = segs_pre_filter
+        segs_pre = []
+        for l in raw:
+            arr = np.array(l).reshape(-1)
+            if len(arr) >= 4:
+                segs_pre.append((int(arr[0]), int(arr[1]), int(arr[2]), int(arr[3])))
+        segs_pre, _ = clean_wall_lines(segs_pre)
+        segs = segs_pre
         robustness['filter_fallback_used'] = True
     else:
         robustness['filter_fallback_used'] = False
@@ -1159,7 +1146,10 @@ if __name__ == "__main__":
     in_img, out_obj = sys.argv[1], sys.argv[2]
     os.makedirs(os.path.dirname(out_obj), exist_ok=True)
     try:
-        print(json.dumps(analyse(in_img, out_obj)))
+        res = analyse(in_img, out_obj)
+        print(json.dumps(res))
     except Exception as e:
+        import traceback
+        traceback.print_exc(file=sys.stderr)
         print(json.dumps({"error": str(e)}))
-        sys.exit(2)
+        sys.exit(1)

@@ -1,8 +1,7 @@
-import { Suspense, useEffect, useRef, useState, useCallback } from 'react';
+import { Suspense, useEffect, useRef, useState, useCallback, useMemo } from 'react';
 import { Canvas, useLoader, useThree } from '@react-three/fiber';
 import { OrbitControls, Grid, Environment, ContactShadows, Html, Line } from '@react-three/drei';
 import { OBJLoader } from 'three/examples/jsm/loaders/OBJLoader';
-import { MTLLoader } from 'three/examples/jsm/loaders/MTLLoader';
 import * as THREE from 'three';
 
 /* ── camera fit — horizontal/isometric orientation ───────────────────────── */
@@ -163,61 +162,77 @@ function CameraController({ target, viewKey, onReady, onInfo }) {
   return null;
 }
 
+/* ── architectural materials for 3D walls & floor ──────────────────────── */
+const WALL_MATERIALS = {
+  outer_wall: new THREE.MeshStandardMaterial({
+    color: '#2d6be4', roughness: 0.45, metalness: 0.08, side: THREE.DoubleSide
+  }),
+  structural_wall: new THREE.MeshStandardMaterial({
+    color: '#1a3a7a', roughness: 0.40, metalness: 0.12, side: THREE.DoubleSide
+  }),
+  inner_wall: new THREE.MeshStandardMaterial({
+    color: '#8cb8f7', roughness: 0.50, metalness: 0.05, side: THREE.DoubleSide
+  }),
+  floor_slab: new THREE.MeshStandardMaterial({
+    color: '#e6f0fa', roughness: 0.85, metalness: 0.02, side: THREE.DoubleSide
+  }),
+};
+
 /* ── model with render modes ─────────────────────────────────────────────── */
 function FloorModel({ objUrl, onLoaded, renderMode }) {
-  const mtlUrl  = objUrl.replace(/\.obj$/i, '.mtl');
-  let materials = null;
-  try { materials = useLoader(MTLLoader, mtlUrl); } catch {}
+  const obj = useLoader(OBJLoader, objUrl);
 
-  const obj = useLoader(OBJLoader, objUrl, (loader) => {
-    if (materials) { materials.preload(); loader.setMaterials(materials); }
-  });
+  const sceneObject = useMemo(() => {
+    if (!obj) return null;
+    return obj.clone(true);
+  }, [obj]);
 
   // Convert OBJ from Z-up to Three.js Y-up, then centre the loaded geometry at ground level.
   useEffect(() => {
-    if (!obj) return;
-    obj.rotation.set(-Math.PI / 2, 0, 0);
-    obj.updateMatrixWorld(true);
-    const box = new THREE.Box3().setFromObject(obj);
+    if (!sceneObject) return;
+    sceneObject.rotation.set(-Math.PI / 2, 0, 0);
+    sceneObject.updateMatrixWorld(true);
+    const box = new THREE.Box3().setFromObject(sceneObject);
     const c   = box.getCenter(new THREE.Vector3());
-    obj.position.set(-c.x, -box.min.y, -c.z);
-    obj.updateMatrixWorld(true);
-    onLoaded?.(obj);
-  }, [obj]);
+    sceneObject.position.set(-c.x, -box.min.y, -c.z);
+    sceneObject.updateMatrixWorld(true);
+    onLoaded?.(sceneObject);
+  }, [sceneObject]);
 
   useEffect(() => {
-    if (!obj) return;
-    obj.traverse((child) => {
+    if (!sceneObject) return;
+    sceneObject.traverse((child) => {
       if (!child.isMesh) return;
       if (renderMode === 'wireframe') {
         child.material = new THREE.MeshBasicMaterial({ color: '#60a5fa', wireframe: true });
         child.castShadow = child.receiveShadow = false;
       } else if (renderMode === 'xray') {
         child.material = new THREE.MeshStandardMaterial({
-          color: '#93c5fd', transparent: true, opacity: 0.20,
+          color: '#93c5fd', transparent: true, opacity: 0.25,
           roughness: 0.3, metalness: 0.1, side: THREE.DoubleSide, depthWrite: false,
         });
         child.castShadow = child.receiveShadow = false;
       } else {
-        if (child.material?.name && materials) {
-          child.material.roughness   = 0.5;
-          child.material.metalness   = 0.06;
-          child.material.side        = THREE.DoubleSide;
-          child.material.transparent = false;
-          child.material.opacity     = 1;
-          child.material.wireframe   = false;
-          child.material.needsUpdate = true;
+        const matName = (child.material?.name || '').toLowerCase();
+        if (matName.includes('outer') || WALL_MATERIALS[matName]) {
+          child.material = (WALL_MATERIALS[matName] || WALL_MATERIALS.outer_wall).clone();
+        } else if (matName.includes('inner')) {
+          child.material = WALL_MATERIALS.inner_wall.clone();
+        } else if (matName.includes('struct') || matName.includes('spine')) {
+          child.material = WALL_MATERIALS.structural_wall.clone();
+        } else if (matName.includes('floor') || matName.includes('slab')) {
+          child.material = WALL_MATERIALS.floor_slab.clone();
         } else {
           child.material = new THREE.MeshStandardMaterial({
-            color: '#3b82f6', roughness: 0.5, metalness: 0.06, side: THREE.DoubleSide,
+            color: '#3b82f6', roughness: 0.45, metalness: 0.08, side: THREE.DoubleSide,
           });
         }
         child.castShadow = child.receiveShadow = true;
       }
     });
-  }, [obj, renderMode]);
+  }, [sceneObject, renderMode]);
 
-  return <primitive object={obj} />;
+  return sceneObject ? <primitive object={sceneObject} /> : null;
 }
 
 /* ── scene ───────────────────────────────────────────────────────────────── */
