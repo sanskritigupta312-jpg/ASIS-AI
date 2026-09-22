@@ -157,7 +157,7 @@ const createFallbackOBJ = (task, outputPath) => {
   const mtlContent = `newmtl outer_wall\nKd 0.18 0.42 0.86\nKa 0.05 0.10 0.20\nKs 0.3 0.3 0.3\nNs 40\n\n` +
     `newmtl structural_wall\nKd 0.10 0.25 0.60\nKa 0.03 0.08 0.18\nKs 0.4 0.4 0.4\nNs 60\n\n` +
     `newmtl inner_wall\nKd 0.55 0.75 0.98\nKa 0.10 0.15 0.25\nKs 0.2 0.2 0.2\nNs 20\n\n` +
-    `newmtl floor_slab\nKd 0.92 0.95 0.99\nKa 0.15 0.18 0.22\nKs 0.1 0.1 0.1\nNs 10\n`;
+    `newmtl floor_slab\nKd 0.08 0.14 0.24\nKa 0.04 0.07 0.12\nKs 0.05 0.05 0.05\nNs 10\n`;
   fs.writeFileSync(mtlPath, mtlContent, 'utf8');
 
   // Realistic architectural floor plan: 14m x 10m, H=3.0m

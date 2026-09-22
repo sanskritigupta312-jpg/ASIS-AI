@@ -1,28 +1,28 @@
 import { Suspense, useEffect, useRef, useState, useCallback, useMemo } from 'react';
 import { Canvas, useLoader, useThree } from '@react-three/fiber';
-import { OrbitControls, Grid, Environment, ContactShadows, Html, Line } from '@react-three/drei';
+import { OrbitControls, Grid, ContactShadows, Html, Line } from '@react-three/drei';
 import { OBJLoader } from 'three/examples/jsm/loaders/OBJLoader';
 import * as THREE from 'three';
 
 /* ── camera fit — horizontal/isometric orientation ───────────────────────── */
 function fitCamera(camera, controls, object) {
-  const box      = new THREE.Box3().setFromObject(object);
-  const center   = box.getCenter(new THREE.Vector3());
-  const size     = box.getSize(new THREE.Vector3());
-  const footprint = Math.max(size.x, size.z);          // floor plan spread
-  const fov      = camera.fov * (Math.PI / 180);
-  const dist     = Math.abs(footprint / Math.sin(fov / 2)) * 0.65;
+  const box       = new THREE.Box3().setFromObject(object);
+  const center    = box.getCenter(new THREE.Vector3());
+  const size      = box.getSize(new THREE.Vector3());
+  const footprint = Math.max(size.x, size.z, 2.0);    // floor plan spread
+  const fov       = camera.fov * (Math.PI / 180);
+  const dist      = Math.max(6.0, Math.abs(footprint / Math.sin(fov / 2)) * 0.65);
 
   // High Y → model appears horizontal like a real floor plan
   camera.position.set(center.x + dist * 0.7, center.y + dist * 0.55, center.z + dist * 0.7);
-  camera.near = dist * 0.001;
+  camera.near = Math.max(0.1, dist * 0.01);
   camera.far  = dist * 14;
   camera.updateProjectionMatrix();
   camera.lookAt(center);
 
   if (controls) {
     controls.target.copy(center);
-    controls.minDistance = dist * 0.08;
+    controls.minDistance = Math.max(1.0, dist * 0.08);
     controls.maxDistance = dist * 4;
     controls.update();
   }
@@ -94,32 +94,36 @@ function CoordinateSystem({ info }) {
   );
 }
 
-/* ── room labels (shown flat on the floor plane) ────────────────────────── */
-function RoomLabels({ rooms }) {
+/* ── room labels (positioned relative to centered model) ─────────────────── */
+function RoomLabels({ rooms, model }) {
   if (!rooms?.length) return null;
-  const SCALE = 0.05; // must match SCALE_M_PER_PX in Python
+  const SCALE = 0.05; // matches SCALE_M_PER_PX in Python
+  const ox = model?.userData?.originalCenter?.x ?? 0;
+  const oz = model?.userData?.originalCenter?.z ?? 0;
+
   return (
     <group>
       {rooms.map(r => {
-        // compute centre in 3D space (same coordinate system as OBJ)
-        const cx = (r.x + (r.width_m  / SCALE) / 2) * SCALE;
-        const cz = (r.y + (r.height_m / SCALE) / 2) * SCALE;
+        // compute centre in 3D space, subtracting model origin offset
+        const cx = (r.x + (r.width_m  / SCALE) / 2) * SCALE - ox;
+        const cz = (r.y + (r.height_m / SCALE) / 2) * SCALE - oz;
         return (
-          <Html key={r.id} position={[cx, 0.5, cz]} center distanceFactor={18}>
+          <Html key={r.id} position={[cx, 0.6, cz]} center distanceFactor={22}>
             <div style={{
-              background: 'rgba(7,16,31,.82)',
-              border: '1px solid rgba(96,165,250,.35)',
+              background: 'rgba(7,16,31,.88)',
+              border: '1px solid rgba(96,165,250,.4)',
               borderRadius: '6px',
               padding: '3px 8px',
               pointerEvents: 'none',
               userSelect: 'none',
               whiteSpace: 'nowrap',
               textAlign: 'center',
+              boxShadow: '0 4px 12px rgba(0,0,0,0.4)',
             }}>
               <p style={{ fontSize: '10px', fontWeight: 700, color: '#93c5fd', lineHeight: 1.3 }}>
                 {r.label}
               </p>
-              <p style={{ fontSize: '9px', color: '#4b6a9a', lineHeight: 1.2 }}>
+              <p style={{ fontSize: '9px', color: '#60a5fa', lineHeight: 1.2 }}>
                 {r.area_m2} m²
               </p>
             </div>
@@ -129,6 +133,7 @@ function RoomLabels({ rooms }) {
     </group>
   );
 }
+
 /* ── camera controller ───────────────────────────────────────────────────── */
 function CameraController({ target, viewKey, onReady, onInfo }) {
   const { camera, controls } = useThree();
@@ -141,7 +146,7 @@ function CameraController({ target, viewKey, onReady, onInfo }) {
     infoRef.current = info;
     onInfo?.(info);
     onReady?.();
-  }, [target]);
+  }, [target, controls]);
 
   useEffect(() => {
     if (!infoRef.current || !controls || viewKey === prevView.current) return;
@@ -174,7 +179,7 @@ const WALL_MATERIALS = {
     color: '#8cb8f7', roughness: 0.50, metalness: 0.05, side: THREE.DoubleSide
   }),
   floor_slab: new THREE.MeshStandardMaterial({
-    color: '#e6f0fa', roughness: 0.85, metalness: 0.02, side: THREE.DoubleSide
+    color: '#0e1d38', roughness: 0.90, metalness: 0.04, side: THREE.DoubleSide
   }),
 };
 
@@ -194,6 +199,7 @@ function FloorModel({ objUrl, onLoaded, renderMode }) {
     sceneObject.updateMatrixWorld(true);
     const box = new THREE.Box3().setFromObject(sceneObject);
     const c   = box.getCenter(new THREE.Vector3());
+    sceneObject.userData.originalCenter = c.clone();
     sceneObject.position.set(-c.x, -box.min.y, -c.z);
     sceneObject.updateMatrixWorld(true);
     onLoaded?.(sceneObject);
@@ -245,27 +251,25 @@ function Scene({ objUrl, viewKey, onReady, autoRotate, showAxes, showDims, rende
   return (
     <>
       <color attach="background" args={['#07101f']} />
-      <fog attach="fog" args={['#07101f', 90, 300]} />
+      <fog attach="fog" args={['#07101f', 80, 260]} />
 
-      <ambientLight intensity={0.32} color="#b8ccff" />
-      <directionalLight position={[30,55,30]} intensity={2.0} color="#fff8f0" castShadow
-        shadow-mapSize={[2048,2048]} shadow-camera-near={0.5} shadow-camera-far={300}
-        shadow-camera-left={-70} shadow-camera-right={70} shadow-camera-top={70} shadow-camera-bottom={-70}
+      <ambientLight intensity={0.55} color="#c8d8ff" />
+      <directionalLight position={[28, 48, 28]} intensity={1.75} color="#fff8f0" castShadow
+        shadow-mapSize={[2048, 2048]} shadow-camera-near={0.5} shadow-camera-far={260}
+        shadow-camera-left={-60} shadow-camera-right={60} shadow-camera-top={60} shadow-camera-bottom={-60}
         shadow-bias={-0.0004} />
-      <directionalLight position={[-30,35,-20]} intensity={0.55} color="#4070ff" />
-      <directionalLight position={[0,12,-45]}   intensity={0.28} color="#90b8ff" />
-      <hemisphereLight args={['#e6f2ff','#07101f',0.35]} />
-      <spotLight position={[24, 55, 16]} angle={0.22} intensity={2.2} penumbra={0.45} color="#f6f3ea" castShadow
+      <directionalLight position={[-28, 32, -18]} intensity={0.65} color="#4b7df5" />
+      <directionalLight position={[0, 14, -36]} intensity={0.4} color="#8ab0f8" />
+      <hemisphereLight args={['#dbeafe', '#07101f', 0.45]} />
+      <spotLight position={[20, 48, 14]} angle={0.25} intensity={1.5} penumbra={0.5} color="#fbfaf6" castShadow
         shadow-mapSize-width={2048} shadow-mapSize-height={2048} shadow-bias={-0.0005} />
-      <spotLight position={[-26, 38, -12]} angle={0.28} intensity={0.8} penumbra={0.55} color="#7ea8ff" />
-      <Environment preset="studio" />
 
-      <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, 0, 0]} receiveShadow>
+      <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, -0.02, 0]} receiveShadow>
         <planeGeometry args={[280, 280]} />
-        <meshStandardMaterial color="#091124" roughness={0.95} metalness={0.05} />
+        <meshStandardMaterial color="#091124" roughness={0.96} metalness={0.04} />
       </mesh>
 
-      <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, 0.01, 0]}>
+      <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, 0.005, 0]}>
         <ringGeometry args={[0.35, 8.4, 64]} />
         <meshStandardMaterial color="#1f3a68" opacity={0.24} transparent />
       </mesh>
@@ -279,20 +283,20 @@ function Scene({ objUrl, viewKey, onReady, autoRotate, showAxes, showDims, rende
         <ContactShadows position={[0,-0.07,0]} opacity={0.55} scale={150} blur={2.8} far={12} color="#0a1830" />
       )}
 
+      <OrbitControls makeDefault enablePan enableZoom enableRotate
+        autoRotate={autoRotate} autoRotateSpeed={0.4}
+        dampingFactor={0.07} enableDamping />
+
       <Suspense fallback={null}>
         <FloorModel objUrl={objUrl} onLoaded={setModel} renderMode={renderMode} />
         {model && (
           <>
             <CameraController target={model} viewKey={viewKey} onReady={onReady} onInfo={handleInfo} />
             {(showAxes || showDims) && sceneInfo && <CoordinateSystem info={sceneInfo} />}
-            <RoomLabels rooms={rooms} />
+            <RoomLabels rooms={rooms} model={model} />
           </>
         )}
       </Suspense>
-
-      <OrbitControls makeDefault enablePan enableZoom enableRotate
-        autoRotate={autoRotate} autoRotateSpeed={0.4}
-        dampingFactor={0.07} enableDamping />
     </>
   );
 }
@@ -355,16 +359,16 @@ const Compass = () => (
 
 /* ── render mode icons ───────────────────────────────────────────────────── */
 const RENDER_MODES = [
-  { key: 'solid',     label: 'Solid',     icon: '◼' },
-  { key: 'wireframe', label: 'Wire',      icon: '⬡' },
-  { key: 'xray',      label: 'X-Ray',     icon: '◻' },
+  { key: 'solid',     label: 'Solid',     icon: '■' },
+  { key: 'wireframe', label: 'Wire',      icon: '◇' },
+  { key: 'xray',      label: 'X-Ray',     icon: '▢' },
 ];
 
 const VIEWS = {
-  perspective: { label: '3D',    icon: '⬡' },
-  top:         { label: 'Top',   icon: '⊙' },
-  front:       { label: 'Front', icon: '▭' },
-  side:        { label: 'Side',  icon: '▯' },
+  perspective: { label: '3D',    icon: '◈' },
+  top:         { label: 'Top',   icon: '◎' },
+  front:       { label: 'Front', icon: '▬' },
+  side:        { label: 'Side',  icon: '▮' },
 };
 
 /* ── main component ──────────────────────────────────────────────────────── */
@@ -386,7 +390,20 @@ export default function ThreeDViewer({ isLoading, previewUrl, canvasRef, rooms }
     setSceneInfo(null);
   }, [previewUrl]);
 
-  const isOBJ = previewUrl?.endsWith('.obj');
+  const isOBJ = Boolean(
+    previewUrl && (
+      previewUrl.endsWith('.obj') ||
+      previewUrl.startsWith('blob:') ||
+      previewUrl.includes('.obj')
+    )
+  );
+
+  const isImage = Boolean(
+    previewUrl && !isOBJ && (
+      previewUrl.startsWith('data:image/') ||
+      (previewUrl.startsWith('blob:') === false && previewUrl.match(/\.(png|jpe?g|webp|svg)(\?.*)?$/i))
+    )
+  );
 
   return (
     <div className="relative w-full overflow-hidden"
@@ -396,19 +413,30 @@ export default function ThreeDViewer({ isLoading, previewUrl, canvasRef, rooms }
 
       {isOBJ && (
         <Canvas shadows
-          gl={{ antialias: true, preserveDrawingBuffer: true,
-                toneMapping: THREE.ACESFilmicToneMapping, toneMappingExposure: 1.15,
-                outputColorSpace: THREE.SRGBColorSpace }}
+          gl={{
+            antialias: true,
+            alpha: false,
+            preserveDrawingBuffer: true,
+            powerPreference: 'high-performance',
+            toneMapping: THREE.ACESFilmicToneMapping,
+            toneMappingExposure: 1.1,
+            outputColorSpace: THREE.SRGBColorSpace,
+          }}
+          onCreated={({ gl, scene }) => {
+            gl.setClearColor(new THREE.Color('#07101f'), 1);
+            scene.background = new THREE.Color('#07101f');
+          }}
           camera={{ fov: 42, near: 0.1, far: 1000 }}
           ref={canvasRef}
-          style={{ display: 'block', width: '100%', height: '100%' }}>
+          style={{ display: 'block', width: '100%', height: '100%', background: '#07101f' }}>
+          <color attach="background" args={['#07101f']} />
           <Scene objUrl={previewUrl} viewKey={view} onReady={handleReady}
             autoRotate={autoRotate} showAxes={showAxes} showDims={showDims}
             renderMode={renderMode} onInfo={setSceneInfo} rooms={rooms} />
         </Canvas>
       )}
 
-      {!isOBJ && previewUrl && (
+      {isImage && (
         <div className="absolute inset-0 flex items-center justify-center" style={{ padding: '1.5rem', background: '#07101f' }}>
           <img
             src={previewUrl}
