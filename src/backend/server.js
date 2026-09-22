@@ -166,21 +166,21 @@ const createFallbackOBJ = (task, outputPath) => {
   const facesOuter = [], facesInner = [], facesFloor = [];
   let vo = 1;
 
-  const addWallBox = (x1, y1, x2, y2, thick, isOuter) => {
-    const angle = Math.atan2(y2 - y1, x2 - x1);
+  const addWallBox = (x1, z1, x2, z2, thick, isOuter) => {
+    const angle = Math.atan2(z2 - z1, x2 - x1);
     const dx = (thick / 2.0) * Math.sin(angle);
-    const dy = (thick / 2.0) * Math.cos(angle);
+    const dz = (thick / 2.0) * Math.cos(angle);
     const baseIdx = vo;
 
-    // 8 box vertices (Z-up coordinate system for OBJ)
-    verts.push([x1 - dx, y1 + dy, 0]);
-    verts.push([x1 + dx, y1 - dy, 0]);
-    verts.push([x2 + dx, y2 - dy, 0]);
-    verts.push([x2 - dx, y2 + dy, 0]);
-    verts.push([x1 - dx, y1 + dy, H]);
-    verts.push([x1 + dx, y1 - dy, H]);
-    verts.push([x2 + dx, y2 - dy, H]);
-    verts.push([x2 - dx, y2 + dy, H]);
+    // 8 box vertices (Native Y-up for Three.js: X=width, Y=height, Z=depth)
+    verts.push([x1 - dx, 0.0, z1 + dz]);
+    verts.push([x1 + dx, 0.0, z1 - dz]);
+    verts.push([x2 + dx, 0.0, z2 - dz]);
+    verts.push([x2 - dx, 0.0, z2 + dz]);
+    verts.push([x1 - dx, H, z1 + dz]);
+    verts.push([x1 + dx, H, z1 - dz]);
+    verts.push([x2 + dx, H, z2 - dz]);
+    verts.push([x2 - dx, H, z2 + dz]);
 
     const o = baseIdx;
     const boxF = [
@@ -209,13 +209,24 @@ const createFallbackOBJ = (task, outputPath) => {
   addWallBox(8.0, 4.5, W, 4.5, T_IN, false); // Kitchen / Bath divider
   addWallBox(11.0, 4.5, 11.0, D, T_IN, false); // Bath / Utility divider
 
-  // Floor slab
+  // Floor slab (Y-up)
   const fo = vo;
-  verts.push([-0.5, -0.5, -0.05]);
-  verts.push([W + 0.5, -0.5, -0.05]);
-  verts.push([W + 0.5, D + 0.5, -0.05]);
-  verts.push([-0.5, D + 0.5, -0.05]);
-  facesFloor.push([fo, fo+1, fo+2], [fo, fo+2, fo+3]);
+  verts.push([-0.5, 0.0, -0.5]);
+  verts.push([W + 0.5, 0.0, -0.5]);
+  verts.push([W + 0.5, 0.0, D + 0.5]);
+  verts.push([-0.5, 0.0, D + 0.5]);
+  verts.push([-0.5, -0.05, -0.5]);
+  verts.push([W + 0.5, -0.05, -0.5]);
+  verts.push([W + 0.5, -0.05, D + 0.5]);
+  verts.push([-0.5, -0.05, D + 0.5]);
+  facesFloor.push(
+    [fo, fo+1, fo+2], [fo, fo+2, fo+3],
+    [fo+4, fo+7, fo+6], [fo+4, fo+6, fo+5],
+    [fo, fo+4, fo+5], [fo, fo+5, fo+1],
+    [fo+1, fo+5, fo+6], [fo+1, fo+6, fo+2],
+    [fo+2, fo+6, fo+7], [fo+2, fo+7, fo+3],
+    [fo+3, fo+7, fo+4], [fo+3, fo+4, fo]
+  );
 
   let objText = `mtllib ${mtlName}\n# ASIS AI — Architectural Floor Plan Model\n`;
   for (const [vx, vy, vz] of verts) {

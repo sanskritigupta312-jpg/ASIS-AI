@@ -30,7 +30,7 @@ function fitCamera(camera, controls, object) {
 }
 
 /* ── coordinate axes + dimension lines ──────────────────────────────────── */
-function CoordinateSystem({ info }) {
+function CoordinateSystem({ info, showAxes = false, showDims = false, debugMode = false }) {
   if (!info) return null;
   const { center: c, size: s } = info;
   const pad = 0.8;
@@ -53,43 +53,56 @@ function CoordinateSystem({ info }) {
 
   return (
     <group>
-      {/* Axes */}
-      <Line points={[[ox,oy,oz],[ox+ax*2,oy,oz]]} color="#ef4444" lineWidth={2}/>
-      <Html position={[ox+ax*2+0.4,oy,oz]} center><span style={lbl({background:'rgba(239,68,68,.15)',color:'#f87171',border:'1px solid rgba(239,68,68,.3)'})}> X</span></Html>
+      {/* Axes - only when showAxes or debugMode is active */}
+      {(showAxes || debugMode) && (
+        <>
+          <Line points={[[ox,oy,oz],[ox+ax*2,oy,oz]]} color="#ef4444" lineWidth={2}/>
+          <Html position={[ox+ax*2+0.4,oy,oz]} center><span style={lbl({background:'rgba(239,68,68,.15)',color:'#f87171',border:'1px solid rgba(239,68,68,.3)'})}> X</span></Html>
 
-      <Line points={[[ox,oy,oz],[ox,oy+ay*2,oz]]} color="#22c55e" lineWidth={2}/>
-      <Html position={[ox,oy+ay*2+0.4,oz]} center><span style={lbl({background:'rgba(34,197,94,.15)',color:'#4ade80',border:'1px solid rgba(34,197,94,.3)'})}> Y</span></Html>
+          <Line points={[[ox,oy,oz],[ox,oy+ay*2,oz]]} color="#22c55e" lineWidth={2}/>
+          <Html position={[ox,oy+ay*2+0.4,oz]} center><span style={lbl({background:'rgba(34,197,94,.15)',color:'#4ade80',border:'1px solid rgba(34,197,94,.3)'})}> Y</span></Html>
 
-      <Line points={[[ox,oy,oz],[ox,oy,oz-az*2]]} color="#3b82f6" lineWidth={2}/>
-      <Html position={[ox,oy,oz-az*2-0.4]} center><span style={lbl({background:'rgba(59,130,246,.15)',color:'#60a5fa',border:'1px solid rgba(59,130,246,.3)'})}> Z</span></Html>
+          <Line points={[[ox,oy,oz],[ox,oy,oz-az*2]]} color="#3b82f6" lineWidth={2}/>
+          <Html position={[ox,oy,oz-az*2-0.4]} center><span style={lbl({background:'rgba(59,130,246,.15)',color:'#60a5fa',border:'1px solid rgba(59,130,246,.3)'})}> Z</span></Html>
 
-      <mesh position={[ox,oy,oz]}><sphereGeometry args={[0.12,8,8]}/><meshBasicMaterial color="#fff"/></mesh>
+          <mesh position={[ox,oy,oz]}><sphereGeometry args={[0.12,8,8]}/><meshBasicMaterial color="#fff"/></mesh>
+        </>
+      )}
 
-      {/* Width (X) */}
-      <Line points={[[c.x-s.x/2,oy-0.5,c.z],[c.x+s.x/2,oy-0.5,c.z]]} color="#fbbf24" lineWidth={1.5} dashed dashSize={0.3} gapSize={0.15}/>
-      <Line points={[[c.x-s.x/2,oy-0.3,c.z],[c.x-s.x/2,oy-0.7,c.z]]} color="#fbbf24" lineWidth={1.5}/>
-      <Line points={[[c.x+s.x/2,oy-0.3,c.z],[c.x+s.x/2,oy-0.7,c.z]]} color="#fbbf24" lineWidth={1.5}/>
-      <Html position={[c.x,oy-0.5,c.z]} center><span style={dim}>W: {s.x.toFixed(1)} m</span></Html>
+      {/* Dimensions - only when showDims or debugMode is active */}
+      {(showDims || debugMode) && (
+        <>
+          {/* Width (X) */}
+          <Line points={[[c.x-s.x/2,oy-0.5,c.z],[c.x+s.x/2,oy-0.5,c.z]]} color="#fbbf24" lineWidth={1.5} dashed dashSize={0.3} gapSize={0.15}/>
+          <Line points={[[c.x-s.x/2,oy-0.3,c.z],[c.x-s.x/2,oy-0.7,c.z]]} color="#fbbf24" lineWidth={1.5}/>
+          <Line points={[[c.x+s.x/2,oy-0.3,c.z],[c.x+s.x/2,oy-0.7,c.z]]} color="#fbbf24" lineWidth={1.5}/>
+          <Html position={[c.x,oy-0.5,c.z]} center><span style={dim}>W: {s.x.toFixed(1)} m</span></Html>
 
-      {/* Depth (Z) */}
-      <Line points={[[c.x+s.x/2+0.5,oy,c.z-s.z/2],[c.x+s.x/2+0.5,oy,c.z+s.z/2]]} color="#fbbf24" lineWidth={1.5} dashed dashSize={0.3} gapSize={0.15}/>
-      <Line points={[[c.x+s.x/2+0.3,oy,c.z-s.z/2],[c.x+s.x/2+0.7,oy,c.z-s.z/2]]} color="#fbbf24" lineWidth={1.5}/>
-      <Line points={[[c.x+s.x/2+0.3,oy,c.z+s.z/2],[c.x+s.x/2+0.7,oy,c.z+s.z/2]]} color="#fbbf24" lineWidth={1.5}/>
-      <Html position={[c.x+s.x/2+0.5,oy,c.z]} center><span style={dim}>D: {s.z.toFixed(1)} m</span></Html>
+          {/* Depth (Z) */}
+          <Line points={[[c.x+s.x/2+0.5,oy,c.z-s.z/2],[c.x+s.x/2+0.5,oy,c.z+s.z/2]]} color="#fbbf24" lineWidth={1.5} dashed dashSize={0.3} gapSize={0.15}/>
+          <Line points={[[c.x+s.x/2+0.3,oy,c.z-s.z/2],[c.x+s.x/2+0.7,oy,c.z-s.z/2]]} color="#fbbf24" lineWidth={1.5}/>
+          <Line points={[[c.x+s.x/2+0.3,oy,c.z+s.z/2],[c.x+s.x/2+0.7,oy,c.z+s.z/2]]} color="#fbbf24" lineWidth={1.5}/>
+          <Html position={[c.x+s.x/2+0.5,oy,c.z]} center><span style={dim}>D: {s.z.toFixed(1)} m</span></Html>
 
-      {/* Height (Y) */}
-      <Line points={[[c.x-s.x/2-0.5,c.y-s.y/2,c.z],[c.x-s.x/2-0.5,c.y+s.y/2,c.z]]} color="#fbbf24" lineWidth={1.5} dashed dashSize={0.3} gapSize={0.15}/>
-      <Line points={[[c.x-s.x/2-0.3,c.y-s.y/2,c.z],[c.x-s.x/2-0.7,c.y-s.y/2,c.z]]} color="#fbbf24" lineWidth={1.5}/>
-      <Line points={[[c.x-s.x/2-0.3,c.y+s.y/2,c.z],[c.x-s.x/2-0.7,c.y+s.y/2,c.z]]} color="#fbbf24" lineWidth={1.5}/>
-      <Html position={[c.x-s.x/2-0.5,c.y,c.z]} center><span style={dim}>H: {s.y.toFixed(1)} m</span></Html>
+          {/* Height (Y) */}
+          <Line points={[[c.x-s.x/2-0.5,c.y-s.y/2,c.z],[c.x-s.x/2-0.5,c.y+s.y/2,c.z]]} color="#fbbf24" lineWidth={1.5} dashed dashSize={0.3} gapSize={0.15}/>
+          <Line points={[[c.x-s.x/2-0.3,c.y-s.y/2,c.z],[c.x-s.x/2-0.7,c.y-s.y/2,c.z]]} color="#fbbf24" lineWidth={1.5}/>
+          <Line points={[[c.x-s.x/2-0.3,c.y+s.y/2,c.z],[c.x-s.x/2-0.7,c.y+s.y/2,c.z]]} color="#fbbf24" lineWidth={1.5}/>
+          <Html position={[c.x-s.x/2-0.5,c.y,c.z]} center><span style={dim}>H: {s.y.toFixed(1)} m</span></Html>
+        </>
+      )}
 
-      {/* Corner coords */}
-      <Html position={[c.x-s.x/2,oy,c.z+s.z/2]} center>
-        <span style={{...dim,fontSize:'9px',opacity:.7}}>({(c.x-s.x/2).toFixed(1)}, 0, {(c.z+s.z/2).toFixed(1)})</span>
-      </Html>
-      <Html position={[c.x+s.x/2,oy,c.z-s.z/2]} center>
-        <span style={{...dim,fontSize:'9px',opacity:.7}}>({(c.x+s.x/2).toFixed(1)}, 0, {(c.z-s.z/2).toFixed(1)})</span>
-      </Html>
+      {/* Corner coords - only in debugMode */}
+      {debugMode && (
+        <>
+          <Html position={[c.x-s.x/2,oy,c.z+s.z/2]} center>
+            <span style={{...dim,fontSize:'9px',opacity:.7}}>({(c.x-s.x/2).toFixed(1)}, 0, {(c.z+s.z/2).toFixed(1)})</span>
+          </Html>
+          <Html position={[c.x+s.x/2,oy,c.z-s.z/2]} center>
+            <span style={{...dim,fontSize:'9px',opacity:.7}}>({(c.x+s.x/2).toFixed(1)}, 0, {(c.z-s.z/2).toFixed(1)})</span>
+          </Html>
+        </>
+      )}
     </group>
   );
 }
@@ -97,18 +110,24 @@ function CoordinateSystem({ info }) {
 /* ── room labels (positioned relative to centered model) ─────────────────── */
 function RoomLabels({ rooms, model }) {
   if (!rooms?.length) return null;
-  const SCALE = 0.05; // matches SCALE_M_PER_PX in Python
   const ox = model?.userData?.originalCenter?.x ?? 0;
   const oz = model?.userData?.originalCenter?.z ?? 0;
 
   return (
     <group>
-      {rooms.map(r => {
-        // compute centre in 3D space, subtracting model origin offset
-        const cx = (r.x + (r.width_m  / SCALE) / 2) * SCALE - ox;
-        const cz = (r.y + (r.height_m / SCALE) / 2) * SCALE - oz;
+      {rooms.map((r, idx) => {
+        let cx = 0, cz = 0;
+        if (r.center_x_m != null && r.center_z_m != null) {
+          cx = r.center_x_m - ox;
+          cz = r.center_z_m - oz;
+        } else if (r.x != null && r.y != null) {
+          const rx = r.x < 30 ? r.x : r.x * 0.0272;
+          const ry = r.y < 30 ? r.y : r.y * 0.0272;
+          cx = rx + (r.width_m || 3.0) / 2 - ox;
+          cz = ry + (r.height_m || 3.0) / 2 - oz;
+        }
         return (
-          <Html key={r.id} position={[cx, 0.6, cz]} center distanceFactor={22}>
+          <Html key={r.id || idx} position={[cx, 0.6, cz]} center distanceFactor={22}>
             <div style={{
               background: 'rgba(7,16,31,.88)',
               border: '1px solid rgba(96,165,250,.4)',
@@ -192,10 +211,10 @@ function FloorModel({ objUrl, onLoaded, renderMode }) {
     return obj.clone(true);
   }, [obj]);
 
-  // Convert OBJ from Z-up to Three.js Y-up, then centre the loaded geometry at ground level.
+  // Native Three.js Y-up model, centre the loaded geometry at ground level.
   useEffect(() => {
     if (!sceneObject) return;
-    sceneObject.rotation.set(-Math.PI / 2, 0, 0);
+    sceneObject.rotation.set(0, 0, 0);
     sceneObject.updateMatrixWorld(true);
     const box = new THREE.Box3().setFromObject(sceneObject);
     if (box.isEmpty()) {
@@ -246,7 +265,7 @@ function FloorModel({ objUrl, onLoaded, renderMode }) {
 }
 
 /* ── scene ───────────────────────────────────────────────────────────────── */
-function Scene({ objUrl, viewKey, onReady, autoRotate, showAxes, showDims, renderMode, onInfo, rooms }) {
+function Scene({ objUrl, viewKey, onReady, autoRotate, showAxes, showDims, showLabels, debugMode, renderMode, onInfo, rooms }) {
   const [model,     setModel]     = useState(null);
   const [sceneInfo, setSceneInfo] = useState(null);
 
@@ -296,8 +315,10 @@ function Scene({ objUrl, viewKey, onReady, autoRotate, showAxes, showDims, rende
         {model && (
           <>
             <CameraController target={model} viewKey={viewKey} onReady={onReady} onInfo={handleInfo} />
-            {(showAxes || showDims) && sceneInfo && <CoordinateSystem info={sceneInfo} />}
-            <RoomLabels rooms={rooms} model={model} />
+            {(showAxes || showDims || debugMode) && sceneInfo && (
+              <CoordinateSystem info={sceneInfo} showAxes={showAxes} showDims={showDims} debugMode={debugMode} />
+            )}
+            {showLabels && <RoomLabels rooms={rooms} model={model} />}
           </>
         )}
       </Suspense>
@@ -381,8 +402,10 @@ export default function ThreeDViewer({ isLoading, previewUrl, canvasRef, rooms, 
   const [renderMode,  setRenderMode]  = useState('solid');
   const [modelReady,  setModelReady]  = useState(false);
   const [autoRotate,  setAutoRotate]  = useState(false);
-  const [showAxes,    setShowAxes]    = useState(true);
-  const [showDims,    setShowDims]    = useState(true);
+  const [showAxes,    setShowAxes]    = useState(false);
+  const [showDims,    setShowDims]    = useState(false);
+  const [showLabels,  setShowLabels]  = useState(true);
+  const [debugMode,   setDebugMode]   = useState(false);
   const [sceneInfo,   setSceneInfo]   = useState(null);
   const [imgError,    setImgError]    = useState(false);
 
@@ -433,6 +456,7 @@ export default function ThreeDViewer({ isLoading, previewUrl, canvasRef, rooms, 
           <color attach="background" args={['#07101f']} />
           <Scene objUrl={previewUrl} viewKey={view} onReady={handleReady}
             autoRotate={autoRotate} showAxes={showAxes} showDims={showDims}
+            showLabels={showLabels} debugMode={debugMode}
             renderMode={renderMode} onInfo={setSceneInfo} rooms={rooms} />
         </Canvas>
       )}
@@ -488,7 +512,7 @@ export default function ThreeDViewer({ isLoading, previewUrl, canvasRef, rooms, 
       {isOBJ && modelReady && (
         <>
           {/* Top-left: view presets */}
-          <div className="absolute top-3 left-3 flex gap-1.5">
+          <div className="absolute top-3 left-3 flex gap-1.5 z-10">
             {Object.entries(VIEWS).map(([key, { label, icon }]) => (
               <TBtn key={key} active={view === key} onClick={() => setView(key)} title={`${label} view`}>
                 <span style={{ fontSize: '0.65rem' }}>{icon}</span>{label}
@@ -497,7 +521,7 @@ export default function ThreeDViewer({ isLoading, previewUrl, canvasRef, rooms, 
           </div>
 
           {/* Second row left: render modes */}
-          <div className="absolute flex gap-1.5" style={{ top: 44, left: 12 }}>
+          <div className="absolute flex gap-1.5 z-10" style={{ top: 44, left: 12 }}>
             {RENDER_MODES.map(({ key, label, icon }) => (
               <TBtn key={key} active={renderMode === key} onClick={() => setRenderMode(key)} title={`${label} mode`}>
                 <span style={{ fontSize: '0.65rem' }}>{icon}</span>{label}
@@ -506,14 +530,9 @@ export default function ThreeDViewer({ isLoading, previewUrl, canvasRef, rooms, 
           </div>
 
           {/* Top-right: toggles */}
-          <div className="absolute top-3 right-3 flex gap-1.5">
-            <TBtn active={showAxes} onClick={() => setShowAxes(v => !v)} title="Toggle axes">
-              <svg width="11" height="11" viewBox="0 0 11 11" fill="none">
-                <line x1="1" y1="10" x2="10" y2="10" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/>
-                <line x1="1" y1="10" x2="1"  y2="1"  stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/>
-                <line x1="1" y1="10" x2="5"  y2="6"  stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/>
-              </svg>
-              Axes
+          <div className="absolute top-3 right-3 flex gap-1.5 z-10">
+            <TBtn active={showLabels} onClick={() => setShowLabels(v => !v)} title="Toggle room labels">
+              <span style={{ fontSize: '0.7rem' }}>🏷️</span> Labels
             </TBtn>
             <TBtn active={showDims} onClick={() => setShowDims(v => !v)} title="Toggle dimensions">
               <svg width="11" height="11" viewBox="0 0 11 11" fill="none">
@@ -523,6 +542,9 @@ export default function ThreeDViewer({ isLoading, previewUrl, canvasRef, rooms, 
               </svg>
               Dims
             </TBtn>
+            <TBtn active={debugMode} onClick={() => { setDebugMode(v => !v); setShowAxes(v => !v); }} title="Toggle debug view">
+              <span style={{ fontSize: '0.7rem' }}>🛠️</span> Debug
+            </TBtn>
             <TBtn active={autoRotate} onClick={() => setAutoRotate(v => !v)} title="Toggle auto-rotation">
               {autoRotate ? '⏸' : '▶'} Auto
             </TBtn>
@@ -530,11 +552,16 @@ export default function ThreeDViewer({ isLoading, previewUrl, canvasRef, rooms, 
 
           {/* Bottom-left: legend */}
           <div className="absolute bottom-3 left-3 flex flex-wrap items-center gap-3 px-3 py-2 rounded-xl"
-            style={{ background: 'rgba(7,16,31,.88)', border: '1px solid rgba(30,58,95,.8)', backdropFilter: 'blur(10px)', maxWidth: 380 }}>
-            {[['#2d6be4','Outer wall'],['#8cb8f7','Inner wall'],['#dbeafe','Floor'],
-              ['#ef4444','X'],['#22c55e','Y'],['#3b82f6','Z'],['#fbbf24','Dims']].map(([col, lbl]) => (
+            style={{ background: 'rgba(7,16,31,.88)', border: '1px solid rgba(30,58,95,.8)', backdropFilter: 'blur(10px)', maxWidth: 420, zIndex: 10 }}>
+            {[
+              ['#2d6be4', 'Outer wall'],
+              ['#8cb8f7', 'Inner wall'],
+              ['#0e1d38', 'Floor slab'],
+              ...(showDims || debugMode ? [['#fbbf24', 'Dims']] : []),
+              ...(debugMode ? [['#ef4444', 'X'], ['#22c55e', 'Y'], ['#3b82f6', 'Z']] : []),
+            ].map(([col, lbl]) => (
               <div key={lbl} className="flex items-center gap-1.5">
-                <span className="w-2.5 h-2.5 rounded-sm shrink-0" style={{ background: col }} />
+                <span className="w-2.5 h-2.5 rounded-sm shrink-0" style={{ background: col, border: col === '#0e1d38' ? '1px solid #1e3a5f' : 'none' }} />
                 <span style={{ fontSize: '0.65rem', color: '#93c5fd' }}>{lbl}</span>
               </div>
             ))}
@@ -554,11 +581,11 @@ export default function ThreeDViewer({ isLoading, previewUrl, canvasRef, rooms, 
           {/* Compass */}
           <Compass />
 
-          {/* Dimensions readout */}
-          {showDims && sceneInfo && (
+          {/* Bounding box readout - ONLY in debugMode */}
+          {debugMode && sceneInfo && (
             <div className="absolute px-3 py-2 rounded-xl"
-              style={{ top: 80, left: 12, background: 'rgba(7,16,31,.88)', border: '1px solid rgba(30,58,95,.8)', backdropFilter: 'blur(10px)' }}>
-              <p style={{ fontSize: '0.58rem', fontWeight: 700, letterSpacing: '0.12em', textTransform: 'uppercase', color: '#1e3a5f', marginBottom: 4 }}>Bounding Box</p>
+              style={{ top: 80, left: 12, background: 'rgba(7,16,31,.88)', border: '1px solid rgba(30,58,95,.8)', backdropFilter: 'blur(10px)', zIndex: 10 }}>
+              <p style={{ fontSize: '0.58rem', fontWeight: 700, letterSpacing: '0.12em', textTransform: 'uppercase', color: '#1e3a5f', marginBottom: 4 }}>Bounding Box (Debug)</p>
               {[['W', sceneInfo.size.x],['D', sceneInfo.size.z],['H', sceneInfo.size.y]].map(([l, v]) => (
                 <div key={l} className="flex items-center gap-2">
                   <span style={{ fontSize: '0.65rem', fontWeight: 700, color: '#fbbf24', width: 12 }}>{l}</span>
