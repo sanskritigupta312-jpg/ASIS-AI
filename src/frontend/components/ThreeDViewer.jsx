@@ -375,7 +375,7 @@ export default function ThreeDViewer({ isLoading, previewUrl, canvasRef, rooms }
 
   return (
     <div className="relative w-full overflow-hidden"
-      style={{ height: 540, borderRadius: 'var(--radius-xl)', background: '#07101f' }}>
+      style={{ height: '100%', minHeight: 480, borderRadius: 'var(--radius-xl)', background: '#07101f' }}>
 
       <LoadingOverlay visible={isLoading || (isOBJ && !modelReady)} />
 
@@ -386,7 +386,7 @@ export default function ThreeDViewer({ isLoading, previewUrl, canvasRef, rooms }
                 outputColorSpace: THREE.SRGBColorSpace }}
           camera={{ fov: 42, near: 0.1, far: 1000 }}
           ref={canvasRef}
-          style={{ opacity: modelReady ? 1 : 0, transition: 'opacity .8s ease' }}>
+          style={{ display: 'block', width: '100%', height: '100%' }}>
           <Scene objUrl={previewUrl} viewKey={view} onReady={handleReady}
             autoRotate={autoRotate} showAxes={showAxes} showDims={showDims}
             renderMode={renderMode} onInfo={setSceneInfo} rooms={rooms} />

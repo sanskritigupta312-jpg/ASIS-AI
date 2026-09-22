@@ -214,10 +214,10 @@ body {
 
 /* ── Responsive viewer height ────────────────────────────────────────────── */
 :root {
-  --viewer-h: 320px;
+  --viewer-h: 380px;
 }
-@media (min-width: 640px)  { :root { --viewer-h: 400px; } }
-@media (min-width: 1024px) { :root { --viewer-h: 480px; } }
+@media (min-width: 640px)  { :root { --viewer-h: 480px; } }
+@media (min-width: 1024px) { :root { --viewer-h: 560px; } }
 
 .viewer-auto { height: var(--viewer-h); }
 
