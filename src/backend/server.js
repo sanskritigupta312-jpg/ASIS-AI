@@ -455,12 +455,11 @@ app.get('/api/task', (req, res) => {
     return res.status(404).json({ message: 'Task not found.' });
   }
   
-  const task = tasks.get(taskId);
-  
-  const uploadUrl = task.uploadFilename ? `/uploads/${task.uploadFilename}` : null;
-  const modelUrl = task.modelFilename ? `/outputs/${task.modelFilename}` : null;
-  const blueprintUrl = task.analysis?.blueprint_filename ? `/outputs/${task.analysis.blueprint_filename}` : null;
-  const overlayUrl = task.analysis?.overlay_filename ? `/outputs/${task.analysis.overlay_filename}` : null;
+  const baseUrl = `${req.protocol}://${req.get('host')}`;
+  const uploadUrl = task.uploadFilename ? `${baseUrl}/uploads/${task.uploadFilename}` : null;
+  const modelUrl = task.modelFilename ? `${baseUrl}/outputs/${task.modelFilename}` : null;
+  const blueprintUrl = task.analysis?.blueprint_filename ? `${baseUrl}/outputs/${task.analysis.blueprint_filename}` : null;
+  const overlayUrl = task.analysis?.overlay_filename ? `${baseUrl}/outputs/${task.analysis.overlay_filename}` : null;
 
   res.status(200).json({
     id: task.id,

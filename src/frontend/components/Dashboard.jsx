@@ -398,7 +398,7 @@ export default function Dashboard({ uploadUrl, modelUrl, blueprintUrl, overlayUr
 
         {/* 3D / 2D Viewer */}
         <div className="dark-panel overflow-hidden viewer-auto anim-fade-in">
-          <ThreeDViewer isLoading={false} previewUrl={getViewUrl()} canvasRef={glCanvasRef} rooms={rooms} />
+          <ThreeDViewer isLoading={false} previewUrl={getViewUrl()} canvasRef={glCanvasRef} rooms={rooms} is3D={activeView === '3d'} />
         </div>
 
         {/* Stats */}

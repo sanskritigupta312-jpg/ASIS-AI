@@ -7,24 +7,24 @@ import ThreeDViewer from './ThreeDViewer';
 import Dashboard from './Dashboard';
 import { processFloorPlanClientSide } from '../utils/clientReconstruction';
 
-const API_BASE = import.meta.env.VITE_API_BASE || 'http://localhost:4000';
+const isLocal = typeof window !== 'undefined' && (
+  window.location.hostname === 'localhost' ||
+  window.location.hostname === '127.0.0.1' ||
+  window.location.hostname === '0.0.0.0'
+);
 
-const apiFetch = async (endpoint, options = {}) => {
-  try {
-    return await fetch(`${API_BASE}${endpoint}`, options);
-  } catch (err) {
-    return await fetch(endpoint, options);
-  }
-};
+const API_BASE = import.meta.env.VITE_API_BASE
+  ? import.meta.env.VITE_API_BASE.replace(/\/+$/, '')
+  : (isLocal ? 'http://localhost:4000' : '');
 
-const parseJSON = async (res) => {
-  const text = await res.text();
-  if (!text) return {};
-  try {
-    return JSON.parse(text);
-  } catch (err) {
-    return { message: text };
+const resolveBackendUrl = (url, base) => {
+  if (!url) return null;
+  if (url.startsWith('data:') || url.startsWith('blob:') || url.startsWith('http://') || url.startsWith('https://')) {
+    return url;
   }
+  const cleanBase = (base || '').replace(/\/+$/, '');
+  const cleanPath = url.startsWith('/') ? url : `/${url}`;
+  return cleanBase ? `${cleanBase}${cleanPath}` : url;
 };
 
 const STEP_LABELS = ['Upload', 'Edge Detection', 'Layout', '3D Generation', 'Materials', 'Complete'];
@@ -46,14 +46,15 @@ export default function MainApp() {
     if (!taskId || status !== 'processing') return;
     const iv = setInterval(async () => {
       try {
-        const res  = await apiFetch(`/api/task?id=${taskId}`);
-        const data = await parseJSON(res);
-        if (!res.ok) throw new Error(data.message || `Task poll failed: ${res.status}`);
+        const res = await fetch(`${API_BASE}/api/task?id=${taskId}`);
+        if (!res.ok) throw new Error(`Task poll failed: ${res.status}`);
+        const data = await res.json();
+        
         setActiveStep(data.currentStep);
-        if (data.uploadUrl) setUploadUrl(data.uploadUrl);
-        if (data.modelUrl)  setModelUrl(data.modelUrl);
-        if (data.blueprintUrl) setBlueprintUrl(data.blueprintUrl);
-        if (data.overlayUrl) setOverlayUrl(data.overlayUrl);
+        if (data.uploadUrl) setUploadUrl(resolveBackendUrl(data.uploadUrl, API_BASE));
+        if (data.modelUrl)  setModelUrl(resolveBackendUrl(data.modelUrl, API_BASE));
+        if (data.blueprintUrl) setBlueprintUrl(resolveBackendUrl(data.blueprintUrl, API_BASE));
+        if (data.overlayUrl) setOverlayUrl(resolveBackendUrl(data.overlayUrl, API_BASE));
         if (data.analysis)  setAnalysis(data.analysis);
         if (data.block) setBlock(data.block);
         if (data.status === 'completed' && data.modelUrl) {
@@ -79,52 +80,67 @@ export default function MainApp() {
     setAnalysis(null);
     setBlock(null);
 
-    // 1. Try Python OpenCV backend first (works on localhost)
+    // Instant local preview URL of uploaded floor plan image
+    const localInputUrl = URL.createObjectURL(file);
+
+    // 1. Try Python OpenCV backend first if running locally or API_BASE is configured
     let backendStarted = false;
-    try {
-      const fd = new FormData();
-      fd.append('file', file, file.name);
+    if (API_BASE) {
+      try {
+        const fd = new FormData();
+        fd.append('file', file, file.name);
 
-      const controller = new AbortController();
-      const timeout = setTimeout(() => controller.abort(), 6000);
-      const res = await apiFetch('/api/analyze', { method: 'POST', body: fd, signal: controller.signal });
-      clearTimeout(timeout);
+        const controller = new AbortController();
+        const timeout = setTimeout(() => controller.abort(), 4000);
+        const res = await fetch(`${API_BASE}/api/analyze`, {
+          method: 'POST',
+          body: fd,
+          signal: controller.signal,
+        });
+        clearTimeout(timeout);
 
-      const data = await parseJSON(res);
-      if (res.ok && data.taskId) {
-        setTaskId(data.taskId);
-        backendStarted = true;
-        return;
+        if (res.ok) {
+          const contentType = res.headers.get('content-type') || '';
+          if (contentType.includes('application/json')) {
+            const data = await res.json();
+            if (data.taskId) {
+              setTaskId(data.taskId);
+              setUploadUrl(localInputUrl);
+              backendStarted = true;
+              return;
+            }
+          }
+        }
+      } catch (backendErr) {
+        console.log('Backend not reachable, switching directly to browser 3D reconstruction engine...');
       }
-    } catch (backendErr) {
-      console.log('Backend not available, transitioning to browser 3D reconstruction engine...');
     }
 
-    // 2. If backend is not available (e.g. deployed on Netlify), run in-browser 3D reconstruction
+    // 2. If backend is not available (e.g. deployed on Vercel/Netlify), run in-browser 3D reconstruction
     if (!backendStarted) {
       try {
         // Step 1: Upload & Edge Detection
         setActiveStep(1);
-        await new Promise(r => setTimeout(r, 600));
+        await new Promise(r => setTimeout(r, 500));
 
         // Step 2: Wall & Room Layout Reconstruction
         setActiveStep(2);
-        await new Promise(r => setTimeout(r, 600));
+        await new Promise(r => setTimeout(r, 500));
 
         // Step 3: Extrude 3D geometry
         setActiveStep(3);
         const result = await processFloorPlanClientSide(file);
-        await new Promise(r => setTimeout(r, 700));
+        await new Promise(r => setTimeout(r, 600));
 
         // Step 4: Material logic & Structural validation
         setActiveStep(4);
-        await new Promise(r => setTimeout(r, 600));
+        await new Promise(r => setTimeout(r, 500));
 
         // Step 5: Final output & Blockchain seal
         setActiveStep(5);
-        await new Promise(r => setTimeout(r, 400));
+        await new Promise(r => setTimeout(r, 300));
 
-        setUploadUrl(result.uploadUrl);
+        setUploadUrl(result.uploadUrl || localInputUrl);
         setModelUrl(result.modelUrl);
         setBlueprintUrl(result.blueprintUrl);
         setOverlayUrl(result.overlayUrl);

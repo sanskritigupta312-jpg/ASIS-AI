@@ -198,6 +198,10 @@ function FloorModel({ objUrl, onLoaded, renderMode }) {
     sceneObject.rotation.set(-Math.PI / 2, 0, 0);
     sceneObject.updateMatrixWorld(true);
     const box = new THREE.Box3().setFromObject(sceneObject);
+    if (box.isEmpty()) {
+      console.warn('FloorModel loaded empty geometry');
+      return;
+    }
     const c   = box.getCenter(new THREE.Vector3());
     sceneObject.userData.originalCenter = c.clone();
     sceneObject.position.set(-c.x, -box.min.y, -c.z);
@@ -372,7 +376,7 @@ const VIEWS = {
 };
 
 /* ── main component ──────────────────────────────────────────────────────── */
-export default function ThreeDViewer({ isLoading, previewUrl, canvasRef, rooms }) {
+export default function ThreeDViewer({ isLoading, previewUrl, canvasRef, rooms, is3D }) {
   const [view,        setView]        = useState('perspective');
   const [renderMode,  setRenderMode]  = useState('solid');
   const [modelReady,  setModelReady]  = useState(false);
@@ -380,6 +384,7 @@ export default function ThreeDViewer({ isLoading, previewUrl, canvasRef, rooms }
   const [showAxes,    setShowAxes]    = useState(true);
   const [showDims,    setShowDims]    = useState(true);
   const [sceneInfo,   setSceneInfo]   = useState(null);
+  const [imgError,    setImgError]    = useState(false);
 
   const handleReady = useCallback(() => setTimeout(() => setModelReady(true), 400), []);
 
@@ -388,22 +393,18 @@ export default function ThreeDViewer({ isLoading, previewUrl, canvasRef, rooms }
     setView('perspective');
     setRenderMode('solid');
     setSceneInfo(null);
+    setImgError(false);
   }, [previewUrl]);
 
-  const isOBJ = Boolean(
+  const isOBJ = is3D !== undefined ? Boolean(is3D) : Boolean(
     previewUrl && (
       previewUrl.endsWith('.obj') ||
-      previewUrl.startsWith('blob:') ||
-      previewUrl.includes('.obj')
+      previewUrl.includes('.obj') ||
+      (previewUrl.startsWith('blob:') && !previewUrl.includes('image'))
     )
   );
 
-  const isImage = Boolean(
-    previewUrl && !isOBJ && (
-      previewUrl.startsWith('data:image/') ||
-      (previewUrl.startsWith('blob:') === false && previewUrl.match(/\.(png|jpe?g|webp|svg)(\?.*)?$/i))
-    )
-  );
+  const isImage = !isOBJ && Boolean(previewUrl);
 
   return (
     <div className="relative w-full overflow-hidden"
@@ -438,21 +439,36 @@ export default function ThreeDViewer({ isLoading, previewUrl, canvasRef, rooms }
 
       {isImage && (
         <div className="absolute inset-0 flex items-center justify-center" style={{ padding: '1.5rem', background: '#07101f' }}>
-          <img
-            src={previewUrl}
-            alt="Floor plan"
-            draggable="false"
-            decoding="async"
-            style={{
-              maxWidth: '100%',
-              maxHeight: '100%',
-              objectFit: 'contain',
-              borderRadius: '1rem',
-              background: '#020817',
-              boxShadow: '0 30px 70px rgba(0, 0, 0, 0.35)',
-              imageRendering: 'auto',
-            }}
-          />
+          {imgError ? (
+            <div className="flex flex-col items-center justify-center gap-3 text-center p-6">
+              <div className="w-12 h-12 rounded-xl flex items-center justify-center" style={{ background: 'rgba(239,68,68,0.1)', color: '#f87171' }}>
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                  <circle cx="12" cy="12" r="10"/>
+                  <line x1="12" y1="8" x2="12" y2="12"/>
+                  <line x1="12" y1="16" x2="12.01" y2="16"/>
+                </svg>
+              </div>
+              <p style={{ color: '#93c5fd', fontSize: '0.85rem', fontWeight: 600 }}>Preview Unavailable</p>
+              <p style={{ color: '#64748b', fontSize: '0.75rem' }}>Unable to load image.</p>
+            </div>
+          ) : (
+            <img
+              src={previewUrl}
+              alt="Floor plan preview"
+              onError={() => setImgError(true)}
+              draggable="false"
+              decoding="async"
+              style={{
+                maxWidth: '100%',
+                maxHeight: '100%',
+                objectFit: 'contain',
+                borderRadius: '1rem',
+                background: '#020817',
+                boxShadow: '0 30px 70px rgba(0, 0, 0, 0.35)',
+                imageRendering: 'auto',
+              }}
+            />
+          )}
         </div>
       )}
 
