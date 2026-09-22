@@ -273,10 +273,10 @@ const createFallbackAnalysis = (task) => {
       total_length_m: 77.5,
     },
     rooms: [
-      { id: 1, label: 'Living / Hall', width_m: 8.0, height_m: 5.5, area_m2: 44.0, perimeter_m: 27.0, span_x_m: 8.0, span_y_m: 5.5 },
-      { id: 2, label: 'Master Bedroom', width_m: 8.0, height_m: 4.5, area_m2: 36.0, perimeter_m: 25.0, span_x_m: 8.0, span_y_m: 4.5 },
-      { id: 3, label: 'Kitchen & Dining', width_m: 6.0, height_m: 4.5, area_m2: 27.0, perimeter_m: 21.0, span_x_m: 6.0, span_y_m: 4.5 },
-      { id: 4, label: 'Bathroom / WC', width_m: 3.0, height_m: 5.5, area_m2: 16.5, perimeter_m: 17.0, span_x_m: 3.0, span_y_m: 5.5 },
+      { id: 1, label: 'Zone 1 (Living / Hall)', width_m: 8.0, height_m: 5.5, area_m2: 44.0, perimeter_m: 27.0, span_x_m: 8.0, span_y_m: 5.5, center_x_m: 4.0, center_z_m: 2.75 },
+      { id: 2, label: 'Zone 2 (Bedroom)', width_m: 8.0, height_m: 4.5, area_m2: 36.0, perimeter_m: 25.0, span_x_m: 8.0, span_y_m: 4.5, center_x_m: 4.0, center_z_m: 7.75 },
+      { id: 3, label: 'Zone 3 (Kitchen)', width_m: 6.0, height_m: 4.5, area_m2: 27.0, perimeter_m: 21.0, span_x_m: 6.0, span_y_m: 4.5, center_x_m: 11.0, center_z_m: 2.25 },
+      { id: 4, label: 'Zone 4 (Bathroom)', width_m: 3.0, height_m: 5.5, area_m2: 16.5, perimeter_m: 17.0, span_x_m: 3.0, span_y_m: 5.5, center_x_m: 12.5, center_z_m: 7.25 },
     ],
     material_recommendations: [],
     explainability: {
