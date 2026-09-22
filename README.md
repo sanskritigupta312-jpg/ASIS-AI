@@ -1,5 +1,9 @@
 # ASIS: Autonomous Structural Intelligence System
 
+[![Live Demo](https://img.shields.io/badge/🌐%20Live%20Demo-asis--292.netlify.app-6366f1?style=for-the-badge)](https://asis-292.netlify.app/)
+
+> **🚀 [Live Demo → https://asis-292.netlify.app/](https://asis-292.netlify.app/)**
+
 ## Project Description
 ASIS is a full-stack dApp that bridges the gap between static 2D blueprints and interactive 3D structural data. It utilizes a Python-based OpenCV vision engine to parse uploaded architectural floor plans, extracting wall boundaries and structural segments. This data is fed into a React/Three.js frontend, dynamically extruding the coordinates into an interactive 3D model. 
 

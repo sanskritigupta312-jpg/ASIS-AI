@@ -28,6 +28,120 @@ const parseJSON = async (res) => {
 
 const STEP_LABELS = ['Upload', 'Edge Detection', 'Layout', '3D Generation', 'Materials', 'Complete'];
 
+// Banner shown when the Node.js backend is not reachable (e.g. on Netlify)
+function DemoModeBanner() {
+  return (
+    <div style={{
+      background: 'linear-gradient(135deg, #0f0f1a 0%, #1a1a2e 100%)',
+      minHeight: '100vh',
+      display: 'flex',
+      flexDirection: 'column',
+    }}>
+      <Header />
+      <main style={{
+        flex: 1,
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        padding: '2rem',
+      }}>
+        <div style={{
+          maxWidth: '540px',
+          width: '100%',
+          background: 'rgba(255,255,255,0.04)',
+          border: '1px solid rgba(255,255,255,0.08)',
+          borderRadius: '1.5rem',
+          padding: '2.5rem',
+          textAlign: 'center',
+          backdropFilter: 'blur(12px)',
+        }}>
+          {/* Icon */}
+          <div style={{
+            width: '64px', height: '64px',
+            borderRadius: '1rem',
+            background: 'linear-gradient(135deg, #6366f1, #8b5cf6)',
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            margin: '0 auto 1.5rem',
+            fontSize: '1.75rem',
+          }}>🔌</div>
+
+          <h2 style={{ color: '#f1f5f9', fontSize: '1.4rem', fontWeight: 700, marginBottom: '0.75rem' }}>
+            Backend Not Connected
+          </h2>
+          <p style={{ color: '#94a3b8', fontSize: '0.95rem', lineHeight: 1.7, marginBottom: '1.5rem' }}>
+            The Analysis Studio requires a running Node.js + Python backend to process floor plans.
+            This live demo is <strong style={{ color: '#c4b5fd' }}>frontend-only</strong> — the backend
+            is not deployed on Netlify.
+          </p>
+
+          <div style={{
+            background: 'rgba(99,102,241,0.1)',
+            border: '1px solid rgba(99,102,241,0.25)',
+            borderRadius: '0.75rem',
+            padding: '1rem 1.25rem',
+            marginBottom: '1.75rem',
+            textAlign: 'left',
+          }}>
+            <p style={{ color: '#a5b4fc', fontSize: '0.8rem', fontWeight: 600, marginBottom: '0.5rem', letterSpacing: '0.08em' }}>
+              TO RUN LOCALLY
+            </p>
+            {[
+              'git clone https://github.com/sanskritigupta312-jpg/ASIS-AI.git',
+              'npm install && npm run dev',
+            ].map(cmd => (
+              <code key={cmd} style={{
+                display: 'block',
+                background: 'rgba(0,0,0,0.3)',
+                color: '#e2e8f0',
+                fontSize: '0.78rem',
+                padding: '0.4rem 0.75rem',
+                borderRadius: '0.4rem',
+                marginTop: '0.4rem',
+                fontFamily: 'monospace',
+              }}>{cmd}</code>
+            ))}
+          </div>
+
+          <div style={{ display: 'flex', gap: '0.75rem', justifyContent: 'center', flexWrap: 'wrap' }}>
+            <a
+              href="/studio"
+              style={{
+                background: 'linear-gradient(135deg, #6366f1, #8b5cf6)',
+                color: '#fff',
+                padding: '0.6rem 1.4rem',
+                borderRadius: '0.6rem',
+                textDecoration: 'none',
+                fontSize: '0.875rem',
+                fontWeight: 600,
+              }}
+            >
+              Explore Studio →
+            </a>
+            <a
+              href="https://github.com/sanskritigupta312-jpg/ASIS-AI"
+              target="_blank"
+              rel="noopener noreferrer"
+              style={{
+                background: 'rgba(255,255,255,0.06)',
+                color: '#cbd5e1',
+                padding: '0.6rem 1.4rem',
+                borderRadius: '0.6rem',
+                textDecoration: 'none',
+                fontSize: '0.875rem',
+                fontWeight: 600,
+                border: '1px solid rgba(255,255,255,0.1)',
+              }}
+            >
+              View on GitHub
+            </a>
+          </div>
+        </div>
+      </main>
+      <Footer />
+    </div>
+  );
+}
+
 export default function MainApp() {
   const [status, setStatus]       = useState('idle');
   const [activeStep, setActiveStep] = useState(0);
@@ -39,6 +153,17 @@ export default function MainApp() {
   const [analysis, setAnalysis]   = useState(null);
   const [block, setBlock] = useState(null);
   const [error, setError]         = useState(null);
+  const [backendAvailable, setBackendAvailable] = useState(null); // null = checking
+
+  // Check if the backend is reachable on mount
+  useEffect(() => {
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 4000);
+    fetch(`${API_BASE}/api/ping`, { signal: controller.signal })
+      .then(res => setBackendAvailable(res.ok || res.status < 500))
+      .catch(() => setBackendAvailable(false))
+      .finally(() => clearTimeout(timeout));
+  }, []);
 
   useEffect(() => {
     if (!taskId || status !== 'processing') return;
@@ -85,6 +210,29 @@ export default function MainApp() {
       setStatus('idle');
     }
   };
+
+  // Still checking backend availability — show a subtle loading state
+  if (backendAvailable === null) {
+    return (
+      <div style={{
+        display: 'flex', alignItems: 'center', justifyContent: 'center',
+        height: '100vh', background: '#0a0a0f', color: '#6366f1',
+        fontSize: '1rem', fontFamily: 'Inter, sans-serif', gap: '0.75rem',
+      }}>
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+          strokeWidth="2" style={{ animation: 'spin 1s linear infinite' }}>
+          <path d="M21 12a9 9 0 1 1-6.219-8.56" />
+        </svg>
+        <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
+        Connecting to backend…
+      </div>
+    );
+  }
+
+  // Backend is not reachable (e.g. deployed on Netlify without backend)
+  if (!backendAvailable) {
+    return <DemoModeBanner />;
+  }
 
   if (status === 'completed') {
     return <Dashboard uploadUrl={uploadUrl} modelUrl={modelUrl} blueprintUrl={blueprintUrl} overlayUrl={overlayUrl} analysis={analysis} block={block} />;
@@ -181,3 +329,4 @@ export default function MainApp() {
     </div>
   );
 }
+
